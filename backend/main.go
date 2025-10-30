@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"sync"
-	"time"
+
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -12,63 +12,39 @@ import (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-}
-
-// Cursor represents a cursor position in the editor
-type Cursor struct {
-	Line   int `json:"line"`
-	Column int `json:"column"`
-}
-
-// Message represents a WebSocket message
-type Message struct {
-	Type    string  `json:"type"` // "text-change", "cursor-update", "user-joined", "user-left"
-	UserID  string  `json:"userId"`
-	RoomID  string  `json:"roomId"`
-	Content string  `json:"content,omitempty"`
-	Cursor  *Cursor `json:"cursor,omitempty"`
-}
-
-// Client represents a single WebSocket connection
-type Client struct {
-	conn   *websocket.Conn
-	roomID string
-	userID string
-	role   string // "interviewer", "candidate"
-	send   chan []byte
-	hub    *Hub
-}
-
-// Room manages a two-client collaborative session (interviewer/candidate)
-type Room struct {
-	id         string
-	clients    map[*Client]bool
-	broadcast  chan []byte
-	register   chan *Client
-	unregister chan *Client
-	document   string
-	mu         sync.RWMutex
-}
-
-// Hub manages all rooms in the system
-type Hub struct {
-	rooms    map[string]*Room // roomID -> Room
-	mu       sync.RWMutex
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 func main() {
-	fmt.Println("goderpad main fn started")
 	router := gin.Default()
+
 	router.GET("/ws", func(c *gin.Context) {
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
+			fmt.Println("Failed to set websocket upgrade:", err)
 			return
 		}
 		defer conn.Close()
+
 		for {
-			conn.WriteMessage(websocket.TextMessage, []byte("Hello, WebSocket!"))
-			time.Sleep(time.Second)
+			messageType, message, err := conn.ReadMessage()
+			if err != nil {
+				fmt.Println("Error reading message:", err)
+				break
+			}
+
+			name := string(message)
+			response := fmt.Sprintf("Hello %s", name)
+
+			err = conn.WriteMessage(messageType, []byte(response))
+			if err != nil {
+				fmt.Println("Error writing message:", err)
+				break
+			}
 		}
 	})
+
 	router.Run(":8080")
 }
