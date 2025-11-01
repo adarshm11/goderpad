@@ -7,6 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+
+	"goderpad/handlers"
 )
 
 var upgrader = websocket.Upgrader{
@@ -51,6 +53,11 @@ func main() {
 			}
 		}
 	})
+
+	router.POST("/createRoom", handlers.CreateRoom)
+	router.POST("/deleteRoom", handlers.DeleteRoom)
+	router.POST("/joinRoom", handlers.JoinRoom)
+	router.POST("/leaveRoom", handlers.LeaveRoom)
 
 	router.Run(":8080")
 }
