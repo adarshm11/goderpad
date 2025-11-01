@@ -1,4 +1,4 @@
-package websocket
+package handlers
 
 import (
 	"goderpad/models"
@@ -6,8 +6,8 @@ import (
 
 var hub = &models.Hub{
 	Rooms:      make(map[string]*models.Room),
-	Register:   make(chan *models.Client),
-	Unregister: make(chan *models.Client),
+	Register:   make(chan *models.User),
+	Unregister: make(chan *models.User),
 	Broadcast:  make(chan models.Event),
 }
 
@@ -25,18 +25,18 @@ Room has maximum 2 Clients, any successive requests to join are rejected
 func registerRoom(roomId string) {
 	if _, roomExists := hub.Rooms[roomId]; !roomExists {
 		hub.Rooms[roomId] = &models.Room{
-			Clients: make(map[string]*models.Client),
+			Users: make(map[string]*models.User),
 		}
 	}
 }
 
-// unregisterRoom removes all clients from the room and deletes the room from the hub
+// unregisterRoom removes all Users from the room and deletes the room from the hub
 func unregisterRoom(roomId string) {
 	if room, roomExists := hub.Rooms[roomId]; roomExists {
-		for clientId := range room.Clients {
-			client := room.Clients[clientId]
-			client.Room = nil
-			hub.Unregister <- client
+		for userId := range room.Users {
+			user := room.Users[userId]
+			user.Room = nil
+			hub.Unregister <- user
 		}
 		delete(hub.Rooms, roomId)
 	}

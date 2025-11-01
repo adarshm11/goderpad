@@ -1,6 +1,10 @@
 package models
 
-import "github.com/gorilla/websocket"
+import (
+	"time"
+
+	"github.com/gorilla/websocket"
+)
 
 const (
 	EventTextChange   = "text-change"
@@ -16,17 +20,19 @@ type CursorPosition struct {
 
 type Hub struct {
 	Rooms      map[string]*Room
-	Register   chan *Client
-	Unregister chan *Client
+	Register   chan *User
+	Unregister chan *User
 	Broadcast  chan Event
 }
 
 type Room struct {
-	ID      string
-	Clients map[string]*Client
+	ID       string
+	Users    map[string]*User
+	LastUsed time.Time
+	// when calculating how long ago: use time.Now().Sub(LastUsed).Seconds() and compare to 604800 (one week)
 }
 
-type Client struct {
+type User struct {
 	ID             string
 	Conn           *websocket.Conn
 	Room           *Room
@@ -36,32 +42,4 @@ type Client struct {
 type Event struct {
 	EventType string
 	RoomID    string
-}
-
-type TextChangeEvent struct {
-	Client *Client
-	// To-Do: decide how text changes are represented
-}
-
-type CursorUpdateEvent struct {
-	Client *Client
-	OldPos CursorPosition
-	NewPos CursorPosition
-}
-
-type UserJoinedEvent struct {
-	Client *Client
-	Room   *Room
-}
-
-type UserLeftEvent struct {
-	Client *Client
-	Room   *Room
-}
-
-var eventType = map[string]any{
-	EventTextChange:   TextChangeEvent{},
-	EventCursorUpdate: CursorUpdateEvent{},
-	EventUserJoined:   UserJoinedEvent{},
-	EventUserLeft:     UserLeftEvent{},
 }
