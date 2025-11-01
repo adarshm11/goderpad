@@ -1,26 +1,45 @@
 package models
 
-import "github.com/gorilla/websocket"
+import (
+	"time"
+
+	"github.com/gorilla/websocket"
+)
+
+const (
+	EventTextChange   = "text-change"
+	EventCursorUpdate = "cursor-update"
+	EventUserJoined   = "user-joined"
+	EventUserLeft     = "user-left"
+)
+
+type CursorPosition struct {
+	Line   int `json:"line"`
+	Column int `json:"column"`
+}
 
 type Hub struct {
 	Rooms      map[string]*Room
-	Register   chan *Client
-	Unregister chan *Client
+	Register   chan *User
+	Unregister chan *User
 	Broadcast  chan Event
 }
 
 type Room struct {
-	ID      string
-	Clients map[string]*Client
+	ID       string
+	Users    map[string]*User
+	LastUsed time.Time
+	// when calculating how long ago: use time.Now().Sub(LastUsed).Seconds() and compare to 604800 (one week)
 }
 
-type Client struct {
-	ID   string
-	Conn *websocket.Conn
-	Hub  *Hub
+type User struct {
+	ID             string
+	Conn           *websocket.Conn
+	Room           *Room
+	CursorPosition *CursorPosition
 }
 
 type Event struct {
-	// Possible events: text-change, cursor-update, user-joined, user-left, etc
-
+	EventType string
+	RoomID    string
 }

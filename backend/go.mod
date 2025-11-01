@@ -4,6 +4,8 @@ go 1.24.3
 
 require github.com/gin-gonic/gin v1.11.0
 
+require go.mongodb.org/mongo-driver v1.17.6
+
 require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.1 // indirect
