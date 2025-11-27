@@ -1,10 +1,9 @@
 package util
 
 import (
-	"go.mongodb.org/mongo-driver/bson"
+	"github.com/google/uuid"
 )
 
-func CheckIfUserExists(userID string) *bson.M {
-	// query MongoDB for user exists, if it does then return the document
-	return nil
+func GenerateUniqueRoomID() string {
+	return uuid.New().String()
 }

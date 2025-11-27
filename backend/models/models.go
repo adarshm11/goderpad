@@ -27,6 +27,8 @@ type Hub struct {
 
 type Room struct {
 	ID       string
+	Name     string
+	Owner    string
 	Users    map[string]*User
 	LastUsed time.Time
 	// when calculating how long ago: use time.Now().Sub(LastUsed).Seconds() and compare to 604800 (one week)
@@ -34,6 +36,10 @@ type Room struct {
 
 type User struct {
 	ID             string
+	FirstName      string
+	LastName       string
+	Email          string
+	AccessLevel    int
 	Conn           *websocket.Conn
 	Room           *Room
 	CursorPosition *CursorPosition

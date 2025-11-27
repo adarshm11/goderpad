@@ -1,7 +1,8 @@
 package models
 
 type CreateRoomRequest struct {
-	UserID string `json:"userId"`
+	UserID   string `json:"userId"`
+	RoomName string `json:"roomName"`
 }
 
 type DeleteRoomRequest struct {
