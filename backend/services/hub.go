@@ -11,14 +11,37 @@ var hub = &models.Hub{
 	Broadcast:  make(chan models.Event),
 }
 
+var stopChan = make(chan struct{})
+
 func RegisterUsers() {
-	// To-Do: goroutine that registers users to rooms
+	for {
+		select {
+		case user := <-hub.Register:
+			room := user.Room
+			room.Users[user.ID] = user
+		case <-stopChan:
+			return
+		}
+	}
 }
 
 func UnregisterUsers() {
-	// To-Do: goroutine that unregisters users from rooms
+	for {
+		select {
+		case user := <-hub.Unregister:
+			room := user.Room
+			delete(room.Users, user.ID)
+			user.Room = nil
+		case <-stopChan:
+			return
+		}
+	}
 }
 
 func GetHub() *models.Hub {
 	return hub
+}
+
+func StopHub() {
+	close(stopChan)
 }

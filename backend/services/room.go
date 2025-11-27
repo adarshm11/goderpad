@@ -2,10 +2,13 @@ package services
 
 import (
 	"fmt"
+	"time"
 
 	"goderpad/models"
 	"goderpad/util"
 )
+
+var expireTickerChan = time.NewTicker(time.Hour)
 
 func CreateRoom(request models.CreateRoomRequest) (string, error) {
 	hub := GetHub()
@@ -17,7 +20,6 @@ func CreateRoom(request models.CreateRoomRequest) (string, error) {
 		Owner: request.UserID,
 		Users: make(map[string]*models.User),
 	}
-	// users will be registered when they join the room
 	return roomId, nil
 }
 
@@ -33,9 +35,24 @@ func DeleteRoom(request models.DeleteRoomRequest) error {
 	}
 
 	for _, user := range room.Users {
-		user.Room = nil
 		hub.Unregister <- user
 	}
 	delete(hub.Rooms, request.RoomID)
 	return nil
+}
+
+func StartRoomExpiration() {
+	for range expireTickerChan.C {
+		ExpireRooms()
+	}
+}
+
+func ExpireRooms() {
+	hub := GetHub()
+
+	for roomId, room := range hub.Rooms {
+		if len(room.Users) == 0 && util.TimeSince(room.LastUsed) > util.WeekInSeconds {
+			delete(hub.Rooms, roomId)
+		}
+	}
 }

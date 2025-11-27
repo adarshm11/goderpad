@@ -15,7 +15,6 @@ func JoinRoom(user models.User, roomId string) error {
 
 	user.Room = room
 	hub.Register <- &user
-
 	return nil
 }
 
@@ -30,7 +29,6 @@ func LeaveRoom(user models.User, roomId string) error {
 		return fmt.Errorf("user %s is not in room %s", user.ID, roomId)
 	}
 
-	user.Room = nil
 	hub.Unregister <- &user
 	return nil
 }

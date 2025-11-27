@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"goderpad/handlers"
+	"goderpad/services"
 )
 
 func main() {
@@ -24,4 +25,10 @@ func main() {
 	router.POST("/leaveRoom", handlers.LeaveRoom)
 
 	router.Run(":8080")
+
+	go services.RegisterUsers()
+	go services.UnregisterUsers()
+	go services.StartRoomExpiration()
+
+	defer services.StopHub()
 }
