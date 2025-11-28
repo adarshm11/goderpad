@@ -1,66 +1,81 @@
-import { useState, useEffect, useRef } from 'react'
-import './App.css'
+import { useEffect, useRef, useState } from 'react';
+import './App.css';
+
+type MessageType = 'system' | 'received' | 'sent' | 'error';
+
+interface Message {
+  type: MessageType;
+  text: string;
+}
+
+type ConnectionStatus = 'connected' | 'disconnected';
 
 function App() {
-  const [messages, setMessages] = useState([])
-  const [connectionStatus, setConnectionStatus] = useState('disconnected')
-  const [messageInput, setMessageInput] = useState('')
-  const wsRef = useRef(null)
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
+  const [messageInput, setMessageInput] = useState('');
+  const wsRef = useRef<WebSocket | null>(null);
 
   const connect = () => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return
+      return;
     }
 
-    const ws = new WebSocket('ws://localhost:8080/ws')
+    const ws = new WebSocket('ws://localhost:8080/ws');
 
     ws.onopen = () => {
-      setConnectionStatus('connected')
-      setMessages(prev => [...prev, { type: 'system', text: 'Connected to server' }])
-    }
+      setConnectionStatus('connected');
+      setMessages(prev => [...prev, { type: 'system', text: 'Connected to server' }]);
+    };
 
-    ws.onmessage = (event) => {
-      setMessages(prev => [...prev, { type: 'received', text: event.data }])
-    }
+    ws.onmessage = (event: MessageEvent) => {
+      setMessages(prev => [...prev, { type: 'received', text: event.data }]);
+    };
 
-    ws.onerror = (_) => {
-      setMessages(prev => [...prev, { type: 'error', text: 'WebSocket error occurred' }])
-    }
+    ws.onerror = () => {
+      setMessages(prev => [...prev, { type: 'error', text: 'WebSocket error occurred' }]);
+    };
 
     ws.onclose = () => {
-      setConnectionStatus('disconnected')
-      setMessages(prev => [...prev, { type: 'system', text: 'Disconnected from server' }])
-    }
+      setConnectionStatus('disconnected');
+      setMessages(prev => [...prev, { type: 'system', text: 'Disconnected from server' }]);
+    };
 
-    wsRef.current = ws
-  }
+    wsRef.current = ws;
+  };
 
   const disconnect = () => {
     if (wsRef.current) {
-      wsRef.current.close()
-      wsRef.current = null
+      wsRef.current.close();
+      wsRef.current = null;
     }
-  }
+  };
 
   const sendMessage = () => {
     if (wsRef.current?.readyState === WebSocket.OPEN && messageInput.trim()) {
-      wsRef.current.send(messageInput)
-      setMessages(prev => [...prev, { type: 'sent', text: messageInput }])
-      setMessageInput('')
+      wsRef.current.send(messageInput);
+      setMessages(prev => [...prev, { type: 'sent', text: messageInput }]);
+      setMessageInput('');
     }
-  }
+  };
 
   const clearMessages = () => {
-    setMessages([])
-  }
+    setMessages([]);
+  };
 
   useEffect(() => {
     return () => {
       if (wsRef.current) {
-        wsRef.current.close()
+        wsRef.current.close();
       }
+    };
+  }, []);
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      sendMessage();
     }
-  }, [])
+  };
 
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
@@ -68,9 +83,7 @@ function App() {
 
       <div style={{ marginBottom: '20px' }}>
         <div style={{ marginBottom: '10px' }}>
-          Status: <strong style={{
-            color: connectionStatus === 'connected' ? 'green' : 'red'
-          }}>
+          Status: <strong style={{ color: connectionStatus === 'connected' ? 'green' : 'red' }}>
             {connectionStatus.toUpperCase()}
           </strong>
         </div>
@@ -100,8 +113,8 @@ function App() {
         <input
           type="text"
           value={messageInput}
-          onChange={(e) => setMessageInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+          onChange={event => setMessageInput(event.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Type a message..."
           disabled={connectionStatus === 'disconnected'}
           style={{ padding: '8px', width: '300px', marginRight: '10px' }}
@@ -124,7 +137,7 @@ function App() {
       }}>
         <div><strong>Messages:</strong></div>
         {messages.length === 0 ? (
-          <div className='font-black' style={{ color: '#999', marginTop: '10px' }}>No messages yet...</div>
+          <div className="font-black" style={{ color: '#999', marginTop: '10px' }}>No messages yet...</div>
         ) : (
           messages.map((msg, index) => (
             <div
@@ -155,7 +168,7 @@ function App() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
