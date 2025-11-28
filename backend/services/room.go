@@ -15,10 +15,11 @@ func CreateRoom(request models.CreateRoomRequest) (string, error) {
 
 	roomId := util.GenerateUniqueRoomID()
 	hub.Rooms[roomId] = &models.Room{
-		ID:    roomId,
-		Name:  request.RoomName,
-		Owner: request.UserID,
-		Users: make(map[string]*models.User),
+		ID:       roomId,
+		Name:     request.RoomName,
+		Owner:    request.UserID,
+		Users:    make(map[string]*models.User),
+		LastUsed: time.Now(),
 	}
 	return roomId, nil
 }

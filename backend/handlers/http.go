@@ -56,7 +56,7 @@ func DeleteRoom(c *gin.Context) {
 	}
 	accessLevel := user.AccessLevel
 	if accessLevel < 2 {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient access level to create room"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient access level to delete room"})
 		return
 	}
 	err = services.DeleteRoom(DeleteRoomRequest)
@@ -86,7 +86,7 @@ func JoinRoom(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authorized"})
 		return
 	}
-	err = services.JoinRoom(*user, JoinRoomRequest.RoomID)
+	err = services.JoinRoom(user, JoinRoomRequest.RoomID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -109,7 +109,7 @@ func LeaveRoom(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authorized"})
 		return
 	}
-	err = services.LeaveRoom(*user, LeaveRoomRequest.RoomID)
+	err = services.LeaveRoom(user, LeaveRoomRequest.RoomID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

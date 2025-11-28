@@ -1,9 +1,9 @@
 package util
 
 import (
-	"github.com/google/uuid"
-
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func GenerateUniqueRoomID() string {

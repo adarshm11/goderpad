@@ -24,11 +24,11 @@ func main() {
 	router.POST("/joinRoom", handlers.JoinRoom)
 	router.POST("/leaveRoom", handlers.LeaveRoom)
 
-	router.Run(":8080")
-
 	go services.RegisterUsers()
 	go services.UnregisterUsers()
 	go services.StartRoomExpiration()
 
 	defer services.StopHub()
+
+	router.Run(":8080")
 }

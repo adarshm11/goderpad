@@ -1,6 +1,8 @@
 package services
 
 import (
+	"sync"
+
 	"goderpad/models"
 )
 
@@ -12,13 +14,16 @@ var hub = &models.Hub{
 }
 
 var stopChan = make(chan struct{})
+var stopOnce sync.Once
 
 func RegisterUsers() {
 	for {
 		select {
 		case user := <-hub.Register:
 			room := user.Room
+			room.Lock.Lock()
 			room.Users[user.ID] = user
+			room.Lock.Unlock()
 		case <-stopChan:
 			return
 		}
@@ -30,7 +35,9 @@ func UnregisterUsers() {
 		select {
 		case user := <-hub.Unregister:
 			room := user.Room
+			room.Lock.Lock()
 			delete(room.Users, user.ID)
+			room.Lock.Unlock()
 			user.Room = nil
 		case <-stopChan:
 			return
@@ -43,5 +50,8 @@ func GetHub() *models.Hub {
 }
 
 func StopHub() {
-	close(stopChan)
+	stopOnce.Do(func() {
+		close(stopChan)
+		expireTickerChan.Stop()
+	})
 }
