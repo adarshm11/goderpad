@@ -17,13 +17,13 @@ var MongoClient *mongo.Client
 // InitMongoClient initializes the global MongoClient variable
 func InitMongoClient() error {
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	MONGO_URI, err := config.GetEnv("MONGO_URI")
+	mongoURI, err := config.GetEnv("MONGO_URI")
 	if err != nil {
 		log.Printf("Failed to get MONGO_URI from environment variables: %v", err)
 		return err
 	}
 
-	opts := options.Client().ApplyURI(MONGO_URI).SetServerAPIOptions(serverAPI)
+	opts := options.Client().ApplyURI(mongoURI).SetServerAPIOptions(serverAPI)
 	client, err := mongo.Connect(opts)
 	if err != nil {
 		log.Printf("Failed to connect to MongoDB: %v", err)
@@ -31,7 +31,7 @@ func InitMongoClient() error {
 	}
 
 	MongoClient = client
-	fmt.Println("MongoClient initialized successfully")
+	log.Printf("MongoClient initialized successfully")
 	return nil
 }
 
@@ -47,7 +47,7 @@ func ShutdownMongoClient() error {
 	}
 
 	MongoClient = nil
-	fmt.Println("MongoClient shut down successfully")
+	log.Printf("MongoClient shut down successfully")
 	return nil
 }
 
@@ -64,6 +64,6 @@ func TestConnection() error {
 		return err
 	}
 
-	fmt.Println("Pinged your deployment. You successfully connected to MongoDB!")
+	log.Printf("Pinged your deployment. You successfully connected to MongoDB!")
 	return nil
 }
