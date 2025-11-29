@@ -2,6 +2,9 @@ package main
 
 import (
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gin-gonic/gin"
 
@@ -28,7 +31,13 @@ func main() {
 	go services.UnregisterUsers()
 	go services.StartRoomExpiration()
 
-	defer services.StopHub()
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		services.StopHub()
+		os.Exit(0)
+	}()
 
 	router.Run(":8080")
 }

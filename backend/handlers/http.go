@@ -10,28 +10,38 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func authenticateUser(c *gin.Context, userID string, requiredAccessLevel int) (*models.User, error) {
+	user, err := db.GetUserByID(c.Request.Context(), userID)
+	if err != nil {
+		return nil, models.NewHTTPError(http.StatusInternalServerError, "Internal server error")
+	}
+	if user == nil {
+		return nil, models.NewHTTPError(http.StatusUnauthorized, "user not authorized")
+	}
+	if user.AccessLevel < requiredAccessLevel {
+		return nil, models.NewHTTPError(http.StatusForbidden, "insufficient access level")
+	}
+	return user, nil
+}
+
 func CreateRoom(c *gin.Context) {
-	var CreateRoomRequest models.CreateRoomRequest
-	if err := c.ShouldBindJSON(&CreateRoomRequest); err != nil {
+	var createRoomRequest models.CreateRoomRequest
+	if err := c.ShouldBindJSON(&createRoomRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user, err := db.GetUserByID(c.Request.Context(), CreateRoomRequest.UserID)
+
+	_, err := authenticateUser(c, createRoomRequest.UserID, models.OFFICER)
 	if err != nil {
+		if httpErr, ok := err.(*models.HTTPError); ok {
+			c.JSON(httpErr.StatusCode, gin.H{"error": httpErr.Message})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
-	if user == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authorized"})
-		return
-	}
-	accessLevel := user.AccessLevel
-	if accessLevel < 2 {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient access level to create room"})
-		return
-	}
 
-	roomId, err := services.CreateRoom(CreateRoomRequest)
+	roomId, err := services.CreateRoom(createRoomRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -40,26 +50,23 @@ func CreateRoom(c *gin.Context) {
 }
 
 func DeleteRoom(c *gin.Context) {
-	var DeleteRoomRequest models.DeleteRoomRequest
-	if err := c.ShouldBindJSON(&DeleteRoomRequest); err != nil {
+	var deleteRoomRequest models.DeleteRoomRequest
+	if err := c.ShouldBindJSON(&deleteRoomRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user, err := db.GetUserByID(c.Request.Context(), DeleteRoomRequest.UserID)
+
+	_, err := authenticateUser(c, deleteRoomRequest.UserID, models.OFFICER)
 	if err != nil {
+		if httpErr, ok := err.(*models.HTTPError); ok {
+			c.JSON(httpErr.StatusCode, gin.H{"error": httpErr.Message})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
-	if user == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authorized"})
-		return
-	}
-	accessLevel := user.AccessLevel
-	if accessLevel < 2 {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient access level to delete room"})
-		return
-	}
-	err = services.DeleteRoom(DeleteRoomRequest)
+
+	err = services.DeleteRoom(deleteRoomRequest)
 	if err != nil {
 		if _, ok := err.(*models.PermissionError); ok {
 			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
@@ -72,21 +79,23 @@ func DeleteRoom(c *gin.Context) {
 }
 
 func JoinRoom(c *gin.Context) {
-	var JoinRoomRequest models.JoinRoomRequest
-	if err := c.ShouldBindJSON(&JoinRoomRequest); err != nil {
+	var joinRoomRequest models.JoinRoomRequest
+	if err := c.ShouldBindJSON(&joinRoomRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user, err := db.GetUserByID(c.Request.Context(), JoinRoomRequest.UserID)
+
+	user, err := authenticateUser(c, joinRoomRequest.UserID, models.MEMBER)
 	if err != nil {
+		if httpErr, ok := err.(*models.HTTPError); ok {
+			c.JSON(httpErr.StatusCode, gin.H{"error": httpErr.Message})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
-	if user == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authorized"})
-		return
-	}
-	err = services.JoinRoom(user, JoinRoomRequest.RoomID)
+
+	err = services.JoinRoom(user, joinRoomRequest.RoomID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -95,21 +104,23 @@ func JoinRoom(c *gin.Context) {
 }
 
 func LeaveRoom(c *gin.Context) {
-	var LeaveRoomRequest models.LeaveRoomRequest
-	if err := c.ShouldBindJSON(&LeaveRoomRequest); err != nil {
+	var leaveRoomRequest models.LeaveRoomRequest
+	if err := c.ShouldBindJSON(&leaveRoomRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user, err := db.GetUserByID(c.Request.Context(), LeaveRoomRequest.UserID)
+
+	user, err := authenticateUser(c, leaveRoomRequest.UserID, models.MEMBER)
 	if err != nil {
+		if httpErr, ok := err.(*models.HTTPError); ok {
+			c.JSON(httpErr.StatusCode, gin.H{"error": httpErr.Message})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
-	if user == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authorized"})
-		return
-	}
-	err = services.LeaveRoom(user, LeaveRoomRequest.RoomID)
+
+	err = services.LeaveRoom(user, leaveRoomRequest.RoomID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
