@@ -1,6 +1,6 @@
 package models
 
-var (
+const (
 	BANNED     = -2
 	PENDING    = -1
 	NON_MEMBER = 0

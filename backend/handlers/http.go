@@ -16,10 +16,10 @@ func authenticateUser(c *gin.Context, userID string, requiredAccessLevel int) (*
 		return nil, models.NewHTTPError(http.StatusInternalServerError, "Internal server error")
 	}
 	if user == nil {
-		return nil, models.NewHTTPError(http.StatusUnauthorized, "user not authorized")
+		return nil, models.NewHTTPError(http.StatusUnauthorized, "User not authorized")
 	}
 	if user.AccessLevel < requiredAccessLevel {
-		return nil, models.NewHTTPError(http.StatusForbidden, "insufficient access level")
+		return nil, models.NewHTTPError(http.StatusForbidden, "Insufficient access level")
 	}
 	return user, nil
 }
@@ -41,12 +41,12 @@ func CreateRoom(c *gin.Context) {
 		return
 	}
 
-	roomId, err := services.CreateRoom(createRoomRequest)
+	roomID, err := services.CreateRoom(createRoomRequest)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"roomID": roomId})
+	c.JSON(http.StatusOK, gin.H{"roomID": roomID})
 }
 
 func DeleteRoom(c *gin.Context) {
@@ -95,7 +95,7 @@ func JoinRoom(c *gin.Context) {
 		return
 	}
 
-	err = services.JoinRoom(user, joinRoomRequest.RoomID)
+	err = services.JoinRoom(user, joinRoomRequest.RoomID) // TODO: make this check if room exists, return 404 if not
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -120,7 +120,7 @@ func LeaveRoom(c *gin.Context) {
 		return
 	}
 
-	err = services.LeaveRoom(user, leaveRoomRequest.RoomID)
+	err = services.LeaveRoom(user, leaveRoomRequest.RoomID) // TODO: make this check if room exists, return 404 if not
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
