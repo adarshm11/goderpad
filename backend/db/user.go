@@ -9,6 +9,7 @@ import (
 	"goderpad/models"
 )
 
+// TODO: implement actual database logic
 func GetUserByID(ctx context.Context, userID string) (*models.User, error) {
 	// query MongoDB for user by ID and return a User model
 	return nil, nil
