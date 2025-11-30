@@ -7,26 +7,16 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const (
-	EventTextChange   = "text-change"
-	EventCursorUpdate = "cursor-update"
-	EventUserJoined   = "user-joined"
-	EventUserLeft     = "user-left"
-)
-
-type CursorPosition struct {
-	Line   int `json:"line"`
-	Column int `json:"column"`
-}
-
+// Hub manages all active rooms and users
 type Hub struct {
 	Rooms      map[string]*Room
 	Register   chan *User
 	Unregister chan *User
-	Broadcast  chan Event
 	Lock       sync.RWMutex
+	// TODO: decide if we need broadcast channel for web socket events
 }
 
+// Room represents a collaborative coding pad room
 type Room struct {
 	ID       string
 	Name     string
@@ -61,16 +51,17 @@ func (room *Room) GetUser(userID string) (*User, bool) {
 	return user, exists
 }
 
+// User represents a connected user in the system
 type User struct {
-	ID             string
-	FirstName      string
-	LastName       string
-	Email          string
-	AccessLevel    int
-	Conn           *websocket.Conn
-	Room           *Room
-	CursorPosition *CursorPosition
-	Lock           sync.Mutex
+	ID          string
+	FirstName   string
+	LastName    string
+	Email       string
+	AccessLevel int
+	Conn        *websocket.Conn
+	Room        *Room
+	Lock        sync.Mutex
+	// TODO: decide if we need to consider cursor position
 }
 
 func (user *User) SetRoom(room *Room) {
@@ -83,9 +74,4 @@ func (user *User) GetRoom() *Room {
 	user.Lock.Lock()
 	defer user.Lock.Unlock()
 	return user.Room
-}
-
-type Event struct {
-	EventType string
-	RoomID    string
 }
