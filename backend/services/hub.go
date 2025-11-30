@@ -55,8 +55,8 @@ func UnregisterUsers() {
 				hub.Lock.RUnlock()
 				continue
 			}
-			room.Lock.Lock()
 			hub.Lock.RUnlock()
+			room.Lock.Lock()
 			delete(room.Users, user.ID)
 			room.UpdateLastUsed()
 			room.Lock.Unlock()
