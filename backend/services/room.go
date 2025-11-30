@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"maps"
+	"sync"
 	"time"
 
 	"goderpad/models"
@@ -23,6 +24,7 @@ func CreateRoom(request models.CreateRoomRequest) (string, error) {
 		Owner:    request.UserID,
 		Users:    make(map[string]*models.User),
 		LastUsed: time.Now(),
+		Lock:     sync.Mutex{},
 	}
 	hub.Lock.Unlock()
 	return roomID, nil
@@ -98,10 +100,10 @@ func ExpireRooms() {
 		room.Lock.Lock()
 		numUsers := len(room.Users)
 		lastUsed := room.LastUsed
+		room.Lock.Unlock()
 		if numUsers == 0 && util.TimeSince(lastUsed) > util.WeekInSeconds {
 			delete(hub.Rooms, roomID)
 		}
-		room.Lock.Unlock()
 		hub.Lock.Unlock()
 	}
 }
