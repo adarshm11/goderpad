@@ -98,10 +98,10 @@ func ExpireRooms() {
 		room.Lock.Lock()
 		numUsers := len(room.Users)
 		lastUsed := room.LastUsed
-		room.Lock.Unlock()
 		if numUsers == 0 && util.TimeSince(lastUsed) > util.WeekInSeconds {
 			delete(hub.Rooms, roomID)
 		}
+		room.Lock.Unlock()
 		hub.Lock.Unlock()
 	}
 }
