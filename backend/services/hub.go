@@ -2,14 +2,15 @@ package services
 
 import (
 	"sync"
+	"time"
 
 	"goderpad/models"
 )
 
 var hub = &models.Hub{
 	Rooms:      make(map[string]*models.Room),
-	Register:   make(chan *models.User, 100),
-	Unregister: make(chan *models.User, 100),
+	Register:   make(chan models.RegisterRequest, 100),
+	Unregister: make(chan models.UnregisterRequest, 100),
 	Broadcast:  make(chan models.Event),
 	Lock:       sync.RWMutex{},
 }
@@ -22,17 +23,23 @@ var stopOnce sync.Once
 func RegisterUsers() {
 	for {
 		select {
-		case user := <-hub.Register:
+		case request := <-hub.Register:
 			hub.Lock.RLock()
-			room := user.GetRoom()
+			user, room := request.User, request.Room
 			hub.Lock.RUnlock()
 			if room == nil {
 				continue
 			}
-			room.UpdateLastUsed()
 			room.Lock.Lock()
+			if room.Deleted {
+				room.Lock.Unlock()
+				continue
+			}
+			room.LastUsed = time.Now()
 			room.Users[user.ID] = user
 			room.Lock.Unlock()
+
+			user.SetRoom(room)
 		case <-stopChan:
 			return
 		}
@@ -44,22 +51,21 @@ func RegisterUsers() {
 func UnregisterUsers() {
 	for {
 		select {
-		case user := <-hub.Unregister:
+		case request := <-hub.Unregister:
 			hub.Lock.RLock()
-			room := user.GetRoom()
+			user, room := request.User, request.Room
 			if room == nil {
 				hub.Lock.RUnlock()
 				continue
 			}
-			if _, ok := hub.Rooms[room.ID]; !ok {
+			// check if Room exists in the hub
+			if _, ok := hub.Rooms[room.ID]; !ok && !room.Deleted {
 				hub.Lock.RUnlock()
 				continue
 			}
 			hub.Lock.RUnlock()
-			room.Lock.Lock()
-			delete(room.Users, user.ID)
+			room.RemoveUser(user.ID)
 			room.UpdateLastUsed()
-			room.Lock.Unlock()
 			user.SetRoom(nil)
 		case <-stopChan:
 			return

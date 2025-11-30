@@ -24,7 +24,8 @@ func CreateRoom(request models.CreateRoomRequest) (string, error) {
 		Owner:    request.UserID,
 		Users:    make(map[string]*models.User),
 		LastUsed: time.Now(),
-		Lock:     sync.Mutex{},
+		Deleted:  false,
+		Lock:     sync.RWMutex{},
 	}
 	hub.Lock.Unlock()
 	return roomID, nil
@@ -34,6 +35,7 @@ func CreateRoom(request models.CreateRoomRequest) (string, error) {
 func DeleteRoom(request models.DeleteRoomRequest) error {
 	hub := GetHub()
 
+	// Step 1: Acquire the Hub's lock to check room existence and ownership
 	hub.Lock.Lock()
 	room, roomExists := hub.Rooms[request.RoomID]
 	if !roomExists {
@@ -50,13 +52,14 @@ func DeleteRoom(request models.DeleteRoomRequest) error {
 	for _, user := range room.Users {
 		usersToUnregister = append(usersToUnregister, user)
 	}
+	room.Deleted = true
 	room.Lock.Unlock()
 
 	delete(hub.Rooms, request.RoomID)
 	hub.Lock.Unlock()
 
 	for _, user := range usersToUnregister {
-		hub.Unregister <- user
+		hub.Unregister <- models.UnregisterRequest{User: user, Room: room}
 	}
 	return nil
 }

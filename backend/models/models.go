@@ -21,8 +21,8 @@ type CursorPosition struct {
 
 type Hub struct {
 	Rooms      map[string]*Room
-	Register   chan *User
-	Unregister chan *User
+	Register   chan RegisterRequest
+	Unregister chan UnregisterRequest
 	Broadcast  chan Event
 	Lock       sync.RWMutex
 }
@@ -33,31 +33,32 @@ type Room struct {
 	Owner    string
 	Users    map[string]*User
 	LastUsed time.Time
-	Lock     sync.Mutex
+	Deleted  bool
+	Lock     sync.RWMutex
 }
 
 func (room *Room) UpdateLastUsed() {
 	room.Lock.Lock()
-	defer room.Lock.Unlock()
 	room.LastUsed = time.Now()
+	room.Lock.Unlock()
 }
 
 func (room *Room) AddUser(user *User) {
 	room.Lock.Lock()
-	defer room.Lock.Unlock()
 	room.Users[user.ID] = user
+	room.Lock.Unlock()
 }
 
 func (room *Room) RemoveUser(userID string) {
 	room.Lock.Lock()
-	defer room.Lock.Unlock()
 	delete(room.Users, userID)
+	room.Lock.Unlock()
 }
 
 func (room *Room) GetUser(userID string) (*User, bool) {
-	room.Lock.Lock()
-	defer room.Lock.Unlock()
+	room.Lock.RLock()
 	user, exists := room.Users[userID]
+	room.Lock.RUnlock()
 	return user, exists
 }
 
@@ -75,8 +76,8 @@ type User struct {
 
 func (user *User) SetRoom(room *Room) {
 	user.Lock.Lock()
-	defer user.Lock.Unlock()
 	user.Room = room
+	user.Lock.Unlock()
 }
 
 func (user *User) GetRoom() *Room {
