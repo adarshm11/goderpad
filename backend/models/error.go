@@ -1,5 +1,6 @@
 package models
 
+// PermissionError represents an error due to insufficient permissions
 type PermissionError struct {
 	Message string
 }
