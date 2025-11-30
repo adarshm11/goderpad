@@ -29,10 +29,6 @@ func LeaveRoom(user *models.User, roomId string) error {
 		return fmt.Errorf("room %s does not exist", roomId)
 	}
 
-	if user.Room.ID != room.ID {
-		return fmt.Errorf("user %s is not in room %s", user.ID, roomId)
-	}
-
 	if user.GetRoom().ID != room.ID {
 		return fmt.Errorf("user %s is not in room %s", user.ID, roomId)
 	}
