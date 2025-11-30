@@ -11,12 +11,14 @@ func JoinRoom(user *models.User, roomID string) error {
 	hub := GetHub()
 	hub.Lock.RLock()
 	room, roomExists := hub.Rooms[roomID]
-	hub.Lock.RUnlock()
 	if !roomExists {
+		hub.Lock.RUnlock()
 		return fmt.Errorf("room %s does not exist", roomID)
 	}
 
 	user.SetRoom(room)
+	hub.Lock.RUnlock()
+
 	hub.Register <- user
 	return nil
 }

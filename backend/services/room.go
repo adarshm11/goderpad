@@ -60,6 +60,7 @@ func DeleteRoom(request models.DeleteRoomRequest) error {
 }
 
 // StartRoomExpiration starts a background process that periodically expires inactive rooms
+// This is a goroutine that is started in main.go
 func StartRoomExpiration() {
 	for range expireTicker.C {
 		ExpireRooms()
@@ -87,9 +88,18 @@ func ExpireRooms() {
 		}
 	}
 
-	if len(roomsToDelete) > 0 {
+	for _, roomID := range roomsToDelete {
 		hub.Lock.Lock()
-		for _, roomID := range roomsToDelete {
+		room, exists := hub.Rooms[roomID]
+		if !exists {
+			hub.Lock.Unlock()
+			continue
+		}
+		room.Lock.Lock()
+		numUsers := len(room.Users)
+		lastUsed := room.LastUsed
+		room.Lock.Unlock()
+		if numUsers == 0 && util.TimeSince(lastUsed) > util.WeekInSeconds {
 			delete(hub.Rooms, roomID)
 		}
 		hub.Lock.Unlock()

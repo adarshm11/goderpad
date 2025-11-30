@@ -8,8 +8,8 @@ import (
 
 var hub = &models.Hub{
 	Rooms:      make(map[string]*models.Room),
-	Register:   make(chan *models.User),
-	Unregister: make(chan *models.User),
+	Register:   make(chan *models.User, 100),
+	Unregister: make(chan *models.User, 100),
 	Broadcast:  make(chan models.Event),
 	Lock:       sync.RWMutex{},
 }
@@ -18,6 +18,7 @@ var stopChan = make(chan struct{})
 var stopOnce sync.Once
 
 // RegisterUsers processes user registration requests from the Register channel
+// This is a goroutine that is started in main.go
 func RegisterUsers() {
 	for {
 		select {
@@ -28,9 +29,9 @@ func RegisterUsers() {
 			if room == nil {
 				continue
 			}
+			room.UpdateLastUsed()
 			room.Lock.Lock()
 			room.Users[user.ID] = user
-			room.UpdateLastUsed()
 			room.Lock.Unlock()
 		case <-stopChan:
 			return
@@ -39,6 +40,7 @@ func RegisterUsers() {
 }
 
 // UnregisterUsers processes user unregistration requests from the Unregister channel
+// This is a goroutine that is started in main.go
 func UnregisterUsers() {
 	for {
 		select {
