@@ -30,6 +30,7 @@ func RegisterUsers() {
 			}
 			room.Lock.Lock()
 			room.Users[user.ID] = user
+			room.UpdateLastUsed()
 			room.Lock.Unlock()
 		case <-stopChan:
 			return
@@ -55,8 +56,9 @@ func UnregisterUsers() {
 			room.Lock.Lock()
 			hub.Lock.RUnlock()
 			delete(room.Users, user.ID)
+			room.UpdateLastUsed()
 			room.Lock.Unlock()
-			user.Room = nil
+			user.SetRoom(nil)
 		case <-stopChan:
 			return
 		}

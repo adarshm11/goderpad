@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"maps"
 	"time"
 
 	"goderpad/models"
@@ -69,10 +70,14 @@ func StartRoomExpiration() {
 func ExpireRooms() {
 	hub := GetHub()
 
-	var roomsToDelete []string
-	hub.Lock.Lock()
+	hub.Lock.RLock()
+	roomsCopy := make(map[string]*models.Room)
+	maps.Copy(roomsCopy, hub.Rooms)
+	hub.Lock.RUnlock()
 
-	for roomID, room := range hub.Rooms {
+	var roomsToDelete []string
+
+	for roomID, room := range roomsCopy {
 		room.Lock.Lock()
 		lastUsed := room.LastUsed
 		numUsers := len(room.Users)
@@ -81,7 +86,6 @@ func ExpireRooms() {
 			roomsToDelete = append(roomsToDelete, roomID)
 		}
 	}
-	hub.Lock.Unlock()
 
 	if len(roomsToDelete) > 0 {
 		hub.Lock.Lock()
