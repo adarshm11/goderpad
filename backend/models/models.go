@@ -77,3 +77,16 @@ func (user *User) GetRoom() *Room {
 	defer user.Lock.Unlock()
 	return user.Room
 }
+
+func (user *User) ClearRoomIfMatch(room *Room) {
+	user.Lock.Lock()
+	if user.Room == room {
+		user.Room = nil
+	}
+	user.Lock.Unlock()
+}
+
+type Event struct {
+	EventType string
+	RoomID    string
+}

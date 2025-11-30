@@ -24,9 +24,7 @@ func RegisterUsers() {
 	for {
 		select {
 		case request := <-hub.Register:
-			hub.Lock.RLock()
 			user, room := request.User, request.Room
-			hub.Lock.RUnlock()
 			if room == nil {
 				continue
 			}
@@ -52,21 +50,20 @@ func UnregisterUsers() {
 	for {
 		select {
 		case request := <-hub.Unregister:
-			hub.Lock.RLock()
 			user, room := request.User, request.Room
 			if room == nil {
-				hub.Lock.RUnlock()
 				continue
 			}
-			// check if Room exists in the hub
-			if _, ok := hub.Rooms[room.ID]; !ok && !room.Deleted {
-				hub.Lock.RUnlock()
+			room.Lock.Lock()
+			if room.Deleted {
+				room.Lock.Unlock()
+				user.ClearRoomIfMatch(room)
 				continue
 			}
-			hub.Lock.RUnlock()
-			room.RemoveUser(user.ID)
-			room.UpdateLastUsed()
-			user.SetRoom(nil)
+			delete(room.Users, user.ID)
+			room.LastUsed = time.Now()
+			room.Lock.Unlock()
+			user.ClearRoomIfMatch(room)
 		case <-stopChan:
 			return
 		}

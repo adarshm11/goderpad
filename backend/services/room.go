@@ -42,12 +42,18 @@ func DeleteRoom(request models.DeleteRoomRequest) error {
 		hub.Lock.Unlock()
 		return fmt.Errorf("room %s does not exist", request.RoomID)
 	}
+	room.Lock.Lock()
+	if room.Deleted {
+		room.Lock.Unlock()
+		hub.Lock.Unlock()
+		return fmt.Errorf("room %s has already been deleted", request.RoomID)
+	}
 	if room.Owner != request.UserID {
+		room.Lock.Unlock()
 		hub.Lock.Unlock()
 		return &models.PermissionError{Message: fmt.Sprintf("user %s does not have permission to delete room %s", request.UserID, request.RoomID)}
 	}
 
-	room.Lock.Lock()
 	usersToUnregister := make([]*models.User, 0, len(room.Users))
 	for _, user := range room.Users {
 		usersToUnregister = append(usersToUnregister, user)
@@ -77,23 +83,21 @@ func ExpireRooms() {
 	hub := GetHub()
 
 	hub.Lock.RLock()
-	roomsCopy := make(map[string]*models.Room)
-	maps.Copy(roomsCopy, hub.Rooms)
+	roomsSnapshot := make(map[string]*models.Room, len(hub.Rooms))
+	maps.Copy(roomsSnapshot, hub.Rooms)
 	hub.Lock.RUnlock()
 
-	var roomsToDelete []string
-
-	for roomID, room := range roomsCopy {
-		room.Lock.Lock()
-		lastUsed := room.LastUsed
-		numUsers := len(room.Users)
-		room.Lock.Unlock()
-		if numUsers == 0 && util.TimeSince(lastUsed) > util.WeekInSeconds {
-			roomsToDelete = append(roomsToDelete, roomID)
+	candidateRoomIDs := make([]string, 0)
+	for roomID, room := range roomsSnapshot {
+		room.Lock.RLock()
+		shouldExpire := len(room.Users) == 0 && util.TimeSince(room.LastUsed) > util.WeekInSeconds && !room.Deleted
+		room.Lock.RUnlock()
+		if shouldExpire {
+			candidateRoomIDs = append(candidateRoomIDs, roomID)
 		}
 	}
 
-	for _, roomID := range roomsToDelete {
+	for _, roomID := range candidateRoomIDs {
 		hub.Lock.Lock()
 		room, exists := hub.Rooms[roomID]
 		if !exists {
@@ -101,12 +105,14 @@ func ExpireRooms() {
 			continue
 		}
 		room.Lock.Lock()
-		numUsers := len(room.Users)
-		lastUsed := room.LastUsed
-		room.Lock.Unlock()
-		if numUsers == 0 && util.TimeSince(lastUsed) > util.WeekInSeconds {
-			delete(hub.Rooms, roomID)
+		if room.Deleted || len(room.Users) != 0 || util.TimeSince(room.LastUsed) <= util.WeekInSeconds {
+			room.Lock.Unlock()
+			hub.Lock.Unlock()
+			continue
 		}
+		room.Deleted = true
+		delete(hub.Rooms, roomID)
+		room.Lock.Unlock()
 		hub.Lock.Unlock()
 	}
 }
