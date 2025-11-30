@@ -17,11 +17,14 @@ var hub = &models.Hub{
 var stopChan = make(chan struct{})
 var stopOnce sync.Once
 
+// RegisterUsers processes user registration requests from the Register channel
 func RegisterUsers() {
 	for {
 		select {
 		case user := <-hub.Register:
+			hub.Lock.RLock()
 			room := user.GetRoom()
+			hub.Lock.RUnlock()
 			if room == nil {
 				continue
 			}
@@ -34,15 +37,23 @@ func RegisterUsers() {
 	}
 }
 
+// UnregisterUsers processes user unregistration requests from the Unregister channel
 func UnregisterUsers() {
 	for {
 		select {
 		case user := <-hub.Unregister:
+			hub.Lock.RLock()
 			room := user.GetRoom()
 			if room == nil {
+				hub.Lock.RUnlock()
+				continue
+			}
+			if _, ok := hub.Rooms[room.ID]; !ok {
+				hub.Lock.RUnlock()
 				continue
 			}
 			room.Lock.Lock()
+			hub.Lock.RUnlock()
 			delete(room.Users, user.ID)
 			room.Lock.Unlock()
 			user.Room = nil
@@ -52,10 +63,12 @@ func UnregisterUsers() {
 	}
 }
 
+// GetHub returns the singleton Hub instance
 func GetHub() *models.Hub {
 	return hub
 }
 
+// StopHub gracefully shuts down the hub by closing the stop channel and stopping the expire ticker
 func StopHub() {
 	stopOnce.Do(func() {
 		close(stopChan)

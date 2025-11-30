@@ -6,13 +6,14 @@ import (
 	"goderpad/models"
 )
 
-func JoinRoom(user *models.User, roomId string) error {
+// JoinRoom queues a user to join a room
+func JoinRoom(user *models.User, roomID string) error {
 	hub := GetHub()
 	hub.Lock.RLock()
-	room, roomExists := hub.Rooms[roomId]
+	room, roomExists := hub.Rooms[roomID]
 	hub.Lock.RUnlock()
 	if !roomExists {
-		return fmt.Errorf("room %s does not exist", roomId)
+		return fmt.Errorf("room %s does not exist", roomID)
 	}
 
 	user.SetRoom(room)
@@ -20,17 +21,22 @@ func JoinRoom(user *models.User, roomId string) error {
 	return nil
 }
 
-func LeaveRoom(user *models.User, roomId string) error {
+// LeaveRoom queues a user to leave a room
+func LeaveRoom(user *models.User, roomID string) error {
 	hub := GetHub()
 	hub.Lock.RLock()
-	room, roomExists := hub.Rooms[roomId]
+	room, roomExists := hub.Rooms[roomID]
 	hub.Lock.RUnlock()
 	if !roomExists {
-		return fmt.Errorf("room %s does not exist", roomId)
+		return fmt.Errorf("room %s does not exist", roomID)
 	}
 
-	if user.GetRoom().ID != room.ID {
-		return fmt.Errorf("user %s is not in room %s", user.ID, roomId)
+	userRoom := user.GetRoom()
+	if userRoom == nil {
+		return fmt.Errorf("user %s is not in any room", user.ID)
+	}
+	if userRoom.ID != room.ID {
+		return fmt.Errorf("user %s is not in room %s", user.ID, roomID)
 	}
 
 	hub.Unregister <- user
