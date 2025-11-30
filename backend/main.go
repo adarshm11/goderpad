@@ -1,49 +1,43 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
-)
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
+	"goderpad/handlers"
+	"goderpad/services"
+)
 
 func main() {
 	router := gin.Default()
 
-	router.GET("/ws", func(c *gin.Context) {
-		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-		if err != nil {
-			fmt.Println("Failed to set websocket upgrade:", err)
-			return
-		}
-		defer conn.Close()
-
-		for {
-			messageType, message, err := conn.ReadMessage()
-			if err != nil {
-				fmt.Println("Error reading message:", err)
-				break
-			}
-
-			name := string(message)
-			response := fmt.Sprintf("Hello %s", name)
-
-			err = conn.WriteMessage(messageType, []byte(response))
-			if err != nil {
-				fmt.Println("Error writing message:", err)
-				break
-			}
-		}
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+		})
 	})
+
+	router.GET("/ws", handlers.HandleWebSocket)
+	router.POST("/createRoom", handlers.CreateRoom)
+	router.POST("/deleteRoom", handlers.DeleteRoom)
+	router.POST("/joinRoom", handlers.JoinRoom)
+	router.POST("/leaveRoom", handlers.LeaveRoom)
+
+	go services.RegisterUsers()
+	go services.UnregisterUsers()
+	go services.StartRoomExpiration()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		services.StopHub()
+		os.Exit(0)
+	}()
 
 	router.Run(":8080")
 }
