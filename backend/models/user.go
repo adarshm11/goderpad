@@ -8,19 +8,19 @@ type User struct {
 	ID   string
 	Name string
 	Room *Room
-	Mu   sync.RWMutex
+	mu   sync.RWMutex
 	// TODO: cursor position, color, etc.
 }
 
 func (user *User) SetRoom(room *Room) {
-	user.Mu.Lock()
+	user.mu.Lock()
 	user.Room = room
-	user.Mu.Unlock()
+	user.mu.Unlock()
 	room.AddUser(user)
 }
 
 func (user *User) GetRoom() *Room {
-	user.Mu.RLock()
-	defer user.Mu.RUnlock()
+	user.mu.RLock()
+	defer user.mu.RUnlock()
 	return user.Room
 }

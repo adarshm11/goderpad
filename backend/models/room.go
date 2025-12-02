@@ -14,12 +14,12 @@ type Room struct {
 	Conn     *websocket.Conn
 	Document string
 	LastUsed int64
-	Mu       sync.RWMutex
+	mu       sync.RWMutex
 }
 
 func (room *Room) AddUser(user *User) {
-	room.Mu.Lock()
-	defer room.Mu.Unlock()
+	room.mu.Lock()
+	defer room.mu.Unlock()
 
 	if len(room.Users) == 2 {
 		return // Room is full
@@ -28,7 +28,7 @@ func (room *Room) AddUser(user *User) {
 }
 
 func (room *Room) UpdateLastUsed() {
-	room.Mu.Lock()
+	room.mu.Lock()
 	room.LastUsed = time.Now().Unix()
-	room.Mu.Unlock()
+	room.mu.Unlock()
 }

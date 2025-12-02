@@ -10,14 +10,14 @@ type Hub struct {
 	Rooms      map[string]*Room
 	Register   chan *Room
 	Unregister chan *Room
-	Mu         sync.RWMutex
+	mu         sync.RWMutex
 
 	// TODO: decide if we need a channel to broadcast messages
 }
 
 func (hub *Hub) GetRoom(roomID string) *Room {
-	hub.Mu.RLock()
-	defer hub.Mu.RUnlock()
+	hub.mu.RLock()
+	defer hub.mu.RUnlock()
 	room, exists := hub.Rooms[roomID]
 	if !exists {
 		return nil
