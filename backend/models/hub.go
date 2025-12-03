@@ -24,3 +24,15 @@ func (hub *Hub) GetRoom(roomID string) *Room {
 	}
 	return room
 }
+
+func (hub *Hub) AddRoom(room *Room) {
+	hub.mu.Lock()
+	hub.Rooms[room.ID] = room
+	hub.mu.Unlock()
+}
+
+func (hub *Hub) RemoveRoom(roomID string) {
+	hub.mu.Lock()
+	delete(hub.Rooms, roomID)
+	hub.mu.Unlock()
+}
