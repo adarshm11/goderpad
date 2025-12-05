@@ -2,8 +2,9 @@ package services
 
 import (
 	"context"
-	"goderpad/utils"
 	"log"
+
+	"goderpad/utils"
 )
 
 func RegisterRooms(ctx context.Context) {
