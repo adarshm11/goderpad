@@ -4,6 +4,8 @@ go 1.24.3
 
 require github.com/gin-gonic/gin v1.11.0
 
+require github.com/google/uuid v1.6.0
+
 require (
 	github.com/clerkinc/clerk-sdk-go v1.49.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
