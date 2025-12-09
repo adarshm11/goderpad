@@ -5,7 +5,8 @@ import {
   SignUpButton,
   UserButton,
 } from '@clerk/clerk-react'
-import WebSocketTestClient from './WebSocketTestClient.tsx'
+import WebSocketTestClient from './components/WebSocketTestClient.tsx'
+import InterviewList from './components/InterviewList.tsx'
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         </SignedOut>
         <SignedIn>
           <UserButton />
+          <InterviewList />
         </SignedIn>
       </header>
       <main>
