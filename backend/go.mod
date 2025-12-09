@@ -7,6 +7,13 @@ require github.com/gin-gonic/gin v1.11.0
 require github.com/google/uuid v1.6.0
 
 require (
+	github.com/clerkinc/clerk-sdk-go v1.49.1 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/svix/svix-webhooks v1.82.0 // indirect
+)
+
+require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.1 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
