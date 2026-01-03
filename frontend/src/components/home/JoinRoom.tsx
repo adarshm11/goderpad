@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { joinRoom } from '../../api/api';
 
 interface JoinRoomProps {
   onSwitchToCreate: () => void;
@@ -11,8 +12,13 @@ function JoinRoom({ onSwitchToCreate, isDark }: JoinRoomProps) {
   const [name, setName] = useState('');
   const navigate = useNavigate();
 
-  const handleJoinRoom = () => {
-    navigate(`/${roomId}`);
+  const handleJoinRoom = async () => {
+    const response = await joinRoom(name, roomId);
+    if (response.success) {
+      navigate(`/${roomId}`);
+    } else {
+      alert(response.error || 'Failed to join room');
+    }
   }
 
   return (

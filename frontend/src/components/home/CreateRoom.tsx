@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createRoom } from '../../api/api';
 
 interface CreateRoomProps {
   onSwitchToJoin: () => void;
@@ -8,12 +9,21 @@ interface CreateRoomProps {
 
 function CreateRoom({ onSwitchToJoin, isDark }: CreateRoomProps) {
   const [name, setName] = useState('');
-  const [customRoomId, setCustomRoomId] = useState('');
+  const [roomId, setRoomId] = useState('');
   const navigate = useNavigate();
 
-  const handleCreateRoom = () => {
-    const roomId = customRoomId || Math.random().toString(36).substring(2, 8);
-    navigate(`/${roomId}`);
+  const handleCreateRoom = async () => {
+    let response;
+    if (roomId === '') {
+      response = await createRoom(name);
+    } else {
+      response = await createRoom(name, roomId);
+    }
+    if (response.success) {
+      navigate(`/${response.data.roomId}`);
+    } else {
+      alert(response.error || 'Failed to create room');
+    }
   };
 
   return (
@@ -26,7 +36,7 @@ function CreateRoom({ onSwitchToJoin, isDark }: CreateRoomProps) {
           id='name'
           type='text'
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => { setName(e.target.value); }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && name.trim()) {
               handleCreateRoom();
@@ -48,8 +58,8 @@ function CreateRoom({ onSwitchToJoin, isDark }: CreateRoomProps) {
         <input
           id='customRoomId'
           type='text'
-          value={customRoomId}
-          onChange={(e) => setCustomRoomId(e.target.value)}
+          value={roomId}
+          onChange={(e) => { setRoomId(e.target.value); }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && name.trim()) {
               handleCreateRoom();
