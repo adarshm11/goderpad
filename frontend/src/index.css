@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+/* Prevent overscroll bounce and set background colors */
+html, body {
+  overscroll-behavior: none;
+  overflow: hidden;
+  height: 100%;
+  background-color: rgb(241, 245, 249); /* Light mode bg-gray-50 */
+}
+
+/* Dark mode background */
+@media (prefers-color-scheme: dark) {
+  html, body {
+    background-color: rgb(15, 23, 42); /* Dark mode bg-slate-900 */
+  }
+}
+
+#root {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: none;
+}

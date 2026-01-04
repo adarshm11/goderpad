@@ -9,17 +9,20 @@ interface CreateRoomProps {
 
 function CreateRoom({ onSwitchToJoin, isDark }: CreateRoomProps) {
   const [name, setName] = useState('');
-  const [roomId, setRoomId] = useState('');
+  const [roomName, setRoomName] = useState('');
   const navigate = useNavigate();
 
   const handleCreateRoom = async () => {
     let response;
-    if (roomId === '') {
-      response = await createRoom(name);
+    if (roomName === '') {
+      response = await createRoom(name, `${name}'s sce interview`);
     } else {
-      response = await createRoom(name, roomId);
+      response = await createRoom(name, roomName);
     }
     if (response.success) {
+      const expiry = new Date().getTime() + (24 * 60 * 60 * 1000); // 24 hours
+      const data = JSON.stringify({ name, expiry });
+      localStorage.setItem(`room-${response.data.roomId}-name`, data);
       navigate(`/${response.data.roomId}`);
     } else {
       alert(response.error || 'Failed to create room');
@@ -52,20 +55,20 @@ function CreateRoom({ onSwitchToJoin, isDark }: CreateRoomProps) {
       </div>
 
       <div className='flex flex-col gap-3'>
-        <label htmlFor='customRoomId' className='text-lg font-medium'>
-          custom room ID <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>(optional)</span>
+        <label htmlFor='roomName' className='text-lg font-medium'>
+          room name <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>(optional)</span>
         </label>
         <input
-          id='customRoomId'
+          id='roomName'
           type='text'
-          value={roomId}
-          onChange={(e) => { setRoomId(e.target.value); }}
+          value={roomName}
+          onChange={(e) => { setRoomName(e.target.value); }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && name.trim()) {
               handleCreateRoom();
             }
           }}
-          placeholder='leave empty for random ID'
+          placeholder='name your room'
           className={`px-5 py-4 text-lg rounded-lg focus:outline-none focus:border-blue-500 ${
             isDark
               ? 'bg-slate-800 border border-slate-700 text-white'
@@ -76,7 +79,7 @@ function CreateRoom({ onSwitchToJoin, isDark }: CreateRoomProps) {
 
       <button
         onClick={handleCreateRoom}
-        className='mt-4 px-6 py-4 text-lg bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50'
+        className='mt-4 px-6 py-4 text-lg bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors disabled:opacity-50'
         disabled={!name.trim()}
       >
         create room
@@ -86,7 +89,7 @@ function CreateRoom({ onSwitchToJoin, isDark }: CreateRoomProps) {
         or{' '}
         <button
           onClick={onSwitchToJoin}
-          className={`hover:underline ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+          className={`cursor-pointer hover:underline ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
         >
           join an existing room
         </button>

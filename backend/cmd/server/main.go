@@ -8,10 +8,15 @@ import (
 	"github.com/google/uuid"
 )
 
+type Room struct {
+	RoomName string
+}
+
 func main() {
 	router := gin.Default()
-
 	router.Use(cors.Default())
+
+	rooms := make(map[string]*Room)
 
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -19,9 +24,27 @@ func main() {
 		})
 	})
 
+	router.GET("/room/:roomId", func(c *gin.Context) {
+		roomId := c.Param("roomId")
+		room, exists := rooms[roomId]
+		if !exists {
+			c.JSON(404, gin.H{
+				"success": false,
+				"error":   "Room not found",
+			})
+			return
+		}
+		c.JSON(200, gin.H{
+			"success": true,
+			"data": gin.H{
+				"roomName": room.RoomName,
+			},
+		})
+	})
+
 	type CreateRoomRequest struct {
-		Name   string `json:"name"`
-		RoomId string `json:"roomId,omitempty"`
+		Name     string `json:"name"`
+		RoomName string `json:"roomName,omitempty"`
 	}
 
 	router.POST("/createRoom", func(c *gin.Context) {
@@ -33,14 +56,16 @@ func main() {
 			})
 			return
 		}
-		if req.RoomId == "" {
-			req.RoomId = uuid.New().String()
+		roomId := uuid.New().String()
+
+		log.Printf("Creating room for user: %s with name: %s and roomId: %s", req.Name, req.RoomName, roomId)
+		rooms[roomId] = &Room{
+			RoomName: req.RoomName,
 		}
-		log.Printf("Creating room for user: %s with roomId: %s", req.Name, req.RoomId)
 		c.JSON(200, gin.H{
 			"success": true,
 			"data": gin.H{
-				"roomId": req.RoomId,
+				"roomId": roomId,
 			},
 		})
 	})

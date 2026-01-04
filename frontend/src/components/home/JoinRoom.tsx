@@ -63,7 +63,7 @@ function JoinRoom({ onSwitchToCreate, isDark }: JoinRoomProps) {
       </div>
 
       <button
-        className='mt-4 px-6 py-4 text-lg bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+        className='mt-4 px-6 py-4 text-lg bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
         onClick={handleJoinRoom}
         disabled={!roomId.trim() || !name.trim()}
       >
@@ -74,7 +74,7 @@ function JoinRoom({ onSwitchToCreate, isDark }: JoinRoomProps) {
         or{' '}
         <button
           onClick={onSwitchToCreate}
-          className={`hover:underline ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
+          className={`cursor-pointer hover:underline ${isDark ? 'text-blue-400' : 'text-blue-600'}`}
         >
           create your own room
         </button>
