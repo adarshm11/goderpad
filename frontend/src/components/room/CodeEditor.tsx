@@ -1,8 +1,9 @@
 import Editor from '@monaco-editor/react';
 import { useContext } from 'react';
 import { DarkModeContext } from '../../App';
+import { languageToCode } from '../../util/languageToCode';
 
-function CodeEditor() {
+function CodeEditor({ language }: { language: string }) {
   const { isDark } = useContext(DarkModeContext);
 
   const handleEditorWillMount = (monaco: any) => {
@@ -21,8 +22,8 @@ function CodeEditor() {
       <div className="border-2 border-white rounded-lg overflow-hidden">
         <Editor 
           height="85vh" 
-          defaultLanguage="python" 
-          defaultValue="def solution():" 
+          language={language === 'c++' ? 'cpp' : language} 
+          value={languageToCode(language)} 
           theme={isDark ? 'slate-dark' : 'vs'}
           beforeMount={handleEditorWillMount}
           options={{
