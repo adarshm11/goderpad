@@ -9,7 +9,7 @@ export async function createRoom(name: string, customRoomId?: string) {
       },
       body: JSON.stringify({
         name,
-        customRoomId: customRoomId || undefined,
+        roomId: customRoomId || undefined,
       }),
     });
     return await response.json()
