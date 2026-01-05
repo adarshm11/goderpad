@@ -1,21 +1,21 @@
 import { useNavigate } from "react-router-dom";
 
 interface EnterNameProps {
-  roomId: string;
+  roomName: string;
   name: string;
   setName: (name: string) => void;
   isLoading: boolean;
   onJoinRoom: () => void;
 }
 
-function EnterName({ roomId, name, setName, isLoading, onJoinRoom }: EnterNameProps) {
+function EnterName({ roomName, name, setName, isLoading, onJoinRoom }: EnterNameProps) {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900">
       <div className="flex flex-col gap-6 w-full max-w-md mx-auto p-6">
         <h2 className="text-3xl font-semibold mb-2 text-center dark:text-white">
-          join room: {roomId}
+          join {roomName}
         </h2>
         
         <div className="flex flex-col gap-3">

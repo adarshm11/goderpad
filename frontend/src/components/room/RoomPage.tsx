@@ -67,7 +67,7 @@ function RoomPage() {
   if (!isJoined) {
     return (
       <EnterName
-        roomId={roomId || ''}
+        roomName={roomName}
         name={name}
         setName={setName}
         isLoading={isLoading}
