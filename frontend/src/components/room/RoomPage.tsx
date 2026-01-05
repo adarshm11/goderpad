@@ -13,7 +13,6 @@ function RoomPage() {
   const [isJoined, setIsJoined] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [roomName, setRoomName] = useState('sce interview');
-  const [language, setLanguage] = useState('python');
 
   useEffect(() => {
     const storedData = localStorage.getItem(`room-${roomId}-name`);
@@ -79,24 +78,11 @@ function RoomPage() {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
       <div className='relative'>
-        <select 
-          value={language}
-          onChange={(e) => setLanguage(e.target.value)}
-          className={`absolute top-6 left-10 px-4 py-2 rounded-lg border cursor-pointer z-50 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-          isDark 
-            ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-700' 
-            : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
-        }`}>
-          <option value="python" className={isDark ? 'bg-slate-800' : 'bg-white'}>Python</option>
-          <option value="javascript" className={isDark ? 'bg-slate-800' : 'bg-white'}>JavaScript</option>
-          <option value="java" className={isDark ? 'bg-slate-800' : 'bg-white'}>Java</option>
-          <option value="c++" className={isDark ? 'bg-slate-800' : 'bg-white'}>C++</option>
-        </select>
         <h1 className="absolute top-6 left-0 right-0 text-center text-2xl font-bold text-white z-10">
           {roomName}
         </h1>
       </div>
-      <CodeEditor language={language} />
+      <CodeEditor />
     </div>
   );
 }
