@@ -38,6 +38,7 @@ function CodeEditor() {
   const handleEditorChange = (value: string | undefined) => {
     if (value !== undefined) {
       setCode(value);
+      console.clear();
     }
   }
 
