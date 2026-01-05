@@ -78,7 +78,7 @@ function RoomPage() {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
       <div className='relative'>
-        <h1 className="absolute top-6 left-0 right-0 text-center text-2xl font-bold text-white z-10">
+        <h1 className={`absolute top-6 left-0 right-0 text-center text-2xl font-bold z-10 ${isDark ? 'text-white' : 'text-gray-900'}`}>
           {roomName}
         </h1>
       </div>
