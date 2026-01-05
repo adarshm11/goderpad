@@ -50,6 +50,7 @@ function CodeEditor() {
       </div>
       <div className="w-1/2 border-2 border-white rounded-lg overflow-hidden h-[85vh]">
         <SandpackProvider
+          key={code}
           template={"react"}
           files={{
             '/App.js': code,
