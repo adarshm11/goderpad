@@ -19,6 +19,10 @@ func main() {
 	router.POST("/createRoom", handlers.CreateRoom)
 	router.POST("/joinRoom", handlers.JoinRoom)
 
+	router.GET("/ws/:roomId", func(c *gin.Context) {
+
+	})
+
 	err := router.Run(":8080")
 	if err != nil {
 		log.Fatal("Failed to start server:", err)
