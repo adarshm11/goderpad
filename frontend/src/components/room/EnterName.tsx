@@ -48,7 +48,7 @@ function EnterName({ roomName, name, setName, isLoading, onJoinRoom }: EnterName
 
         <button
           onClick={() => navigate('/')}
-          className="text-sm text-gray-600 dark:text-gray-400 hover:underline"
+          className="text-sm text-gray-600 dark:text-gray-400 hover:underline cursor-pointer"
         >
           ← back to home
         </button>
