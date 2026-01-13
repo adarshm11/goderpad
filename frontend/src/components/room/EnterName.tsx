@@ -2,13 +2,13 @@ import { useNavigate } from "react-router-dom";
 
 interface EnterNameProps {
   roomName: string;
-  name: string;
-  setName: (name: string) => void;
+  userName: string;
+  setUserName: (userName: string) => void;
   isLoading: boolean;
   onJoinRoom: () => void;
 }
 
-function EnterName({ roomName, name, setName, isLoading, onJoinRoom }: EnterNameProps) {
+function EnterName({ roomName, userName, setUserName, isLoading, onJoinRoom }: EnterNameProps) {
   const navigate = useNavigate();
 
   return (
@@ -25,10 +25,10 @@ function EnterName({ roomName, name, setName, isLoading, onJoinRoom }: EnterName
           <input
             id="name"
             type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && name.trim()) {
+              if (e.key === 'Enter' && userName.trim()) {
                 onJoinRoom();
               }
             }}
@@ -40,7 +40,7 @@ function EnterName({ roomName, name, setName, isLoading, onJoinRoom }: EnterName
 
         <button
           onClick={onJoinRoom}
-          disabled={!name.trim() || isLoading}
+          disabled={!userName.trim() || isLoading}
           className="mt-4 px-6 py-4 text-lg bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? 'joining...' : 'join room'}

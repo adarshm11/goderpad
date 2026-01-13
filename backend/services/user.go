@@ -2,14 +2,14 @@ package services
 
 import (
 	"goderpad/models"
-	"goderpad/utils"
 )
 
 // CreateUser creates a new user with a generated UUID
-func CreateUser(name string) models.User {
+func CreateUser(userID, name string) models.User {
 	return models.User{
-		UserID: utils.GenerateUUID(),
+		UserID: userID,
 		Name:   name,
+		Send:   make(chan models.BroadcastMessage, 256), // Buffered channel
 	}
 }
 

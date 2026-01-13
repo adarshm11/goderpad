@@ -15,30 +15,6 @@ func Ping(c *gin.Context) {
 	})
 }
 
-func GetRoomInfo(c *gin.Context) {
-	roomId := c.Param("roomId")
-	if roomId == "" {
-		c.JSON(400, gin.H{
-			"success": false,
-			"error":   "Room ID is required",
-		})
-		return
-	}
-	roomInfo, err := services.GetRoomInfo(roomId)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"success": false,
-			"error":   "Internal server error",
-		})
-		return
-	}
-	if !roomInfo["success"].(bool) {
-		c.JSON(404, roomInfo)
-		return
-	}
-	c.JSON(200, roomInfo)
-}
-
 func CreateRoom(c *gin.Context) {
 	var req models.CreateRoomRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -48,7 +24,7 @@ func CreateRoom(c *gin.Context) {
 		})
 		return
 	}
-	roomData, err := services.CreateRoom(req.Name, req.RoomName)
+	roomData, err := services.CreateRoom(req.UserID, req.Name, req.RoomName)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"success": false,
@@ -69,7 +45,7 @@ func JoinRoom(c *gin.Context) {
 		})
 		return
 	}
-	roomData, err := services.JoinRoom(req.Name, req.RoomId)
+	roomData, err := services.JoinRoom(req.UserID, req.Name, req.RoomId)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"success": false,

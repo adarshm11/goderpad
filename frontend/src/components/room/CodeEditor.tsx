@@ -1,14 +1,31 @@
 import Editor from '@monaco-editor/react';
 import { useState, useRef, useContext, useEffect } from 'react';
-import { DarkModeContext } from '../../App';
+import { DarkModeContext, UserContext } from '../../App';
 import { SandpackProvider, SandpackPreview } from '@codesandbox/sandpack-react';
 
-function CodeEditor() {
+interface CodeEditorProps {
+  code: string;
+  setCode: (code: string) => void;
+  sendWsMessage: (message: any) => void;
+  users: Array<{
+    userId: string;
+    userName: string;
+    cursorPosition: {
+      lineNumber: number;
+      column: number 
+    } | null
+  }>;
+}
+
+function CodeEditor({ code, setCode, sendWsMessage, users }: CodeEditorProps) {
   const { isDark } = useContext(DarkModeContext);
+  const { userId } = useContext(UserContext);
   const editorRef = useRef<any>(null);
-  const [code, setCode] = useState('function App() {\n  return (\n    <div>\n      <h1>Hello, World!</h1>\n    </div>\n  );\n}\nexport default App;');
+  const monacoRef = useRef<any>(null);
+  const decorationIdsRef = useRef<string[]>([]);
   const [sandpackKey, setSandpackKey] = useState(0);
   const [hasError, setHasError] = useState(false);
+  const [debouncedCode, setDebouncedCode] = useState(code);
 
   const handleEditorWillMount = (monaco: any) => {
     monaco.editor.defineTheme('slate-dark', {
@@ -21,11 +38,40 @@ function CodeEditor() {
     });
   };
 
-  const handleEditorDidMount = (editor: any, _: any) => {
+  const handleEditorDidMount = (editor: any, monaco: any) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
+
+    editor.onDidChangeCursorPosition((e: any) => {
+      sendWsMessage({
+        userId,
+        type: 'cursor_update',
+        payload: {
+          lineNumber: e.position.lineNumber,
+          column: e.position.column
+        }
+      });
+    });
   }
 
-  const [debouncedCode, setDebouncedCode] = useState(code);
+  const handleEditorChange = (value: string | undefined) => {
+    if (value !== undefined) {
+      setCode(value);
+      console.clear();
+      sendWsMessage({
+        userId,
+        type: 'code_update',
+        payload: {
+          code: value
+        }
+      });
+    }
+  }
+
+  const handleSandpackReload = () => {
+    setHasError(false);
+    setSandpackKey(prev => prev + 1);
+  };
   
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -35,17 +81,30 @@ function CodeEditor() {
     return () => clearTimeout(timer);
   }, [code]);
 
-  const handleEditorChange = (value: string | undefined) => {
-    if (value !== undefined) {
-      setCode(value);
-      console.clear();
-    }
-  }
+  useEffect(() => {
+    if (!monacoRef.current || !editorRef.current) return;
 
-  const handleSandpackReload = () => {
-    setHasError(false);
-    setSandpackKey(prev => prev + 1);
-  };
+    const newDecorations = users
+      .filter(user => user.cursorPosition !== null)
+      .map(user => ({
+        range: new monacoRef.current.Range(
+          user.cursorPosition!.lineNumber,
+          user.cursorPosition!.column,
+          user.cursorPosition!.lineNumber,
+          user.cursorPosition!.column
+        ),
+        options: {
+          className: 'remote-cursor',
+          hoverMessage: { value: user.userName },
+          beforeContentClassName: `remote-cursor-label`,
+        }
+      }));
+
+    decorationIdsRef.current = editorRef.current.deltaDecorations(
+      decorationIdsRef.current,
+      newDecorations
+    );
+  }, [users]);
 
   return (
     <div className={`flex flex-row gap-4 ${isDark ? 'bg-slate-900' : 'bg-gray-100'} p-6 pt-20`}>

@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/mux"
 
 	"goderpad/handlers"
 )
@@ -15,13 +16,13 @@ func main() {
 
 	router.GET("/ping", handlers.Ping)
 
-	router.GET("/room/:roomId", handlers.GetRoomInfo)
 	router.POST("/createRoom", handlers.CreateRoom)
 	router.POST("/joinRoom", handlers.JoinRoom)
 
-	router.GET("/ws/:roomId", func(c *gin.Context) {
+	wsRouter := mux.NewRouter()
+	wsRouter.HandleFunc("/ws/{roomId}", handlers.WebSocketHandler)
 
-	})
+	router.Any("/ws/*any", gin.WrapH(wsRouter))
 
 	err := router.Run(":8080")
 	if err != nil {

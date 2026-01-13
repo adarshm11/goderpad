@@ -1,18 +1,6 @@
 const API_URL = 'http://localhost:8080';
 
-export async function getRoomDetails(roomId: string) {
-  try {
-    const response = await fetch(`${API_URL}/room/${roomId}`);
-    return await response.json();
-  } catch (err) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : 'Network error',
-    };
-  }
-}
-
-export async function createRoom(name: string, roomName: string) {
+export async function createRoom(userId: string, name: string, roomName: string) {
   try {
     const response = await fetch(`${API_URL}/createRoom`, {
       method: 'POST',
@@ -20,6 +8,7 @@ export async function createRoom(name: string, roomName: string) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        userId,
         name,
         roomName,
       }),
@@ -33,14 +22,18 @@ export async function createRoom(name: string, roomName: string) {
   }
 }
 
-export async function joinRoom(name: string, roomId: string) {
+export async function joinRoom(userId: string, name: string, roomId: string) {
   try {
     const response = await fetch(`${API_URL}/joinRoom`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name, roomId }),
+      body: JSON.stringify({
+        userId,
+        name,
+        roomId
+      }),
     });
     return await response.json();
   } catch (err) {

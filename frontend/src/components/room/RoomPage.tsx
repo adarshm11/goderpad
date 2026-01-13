@@ -1,74 +1,173 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect, useContext } from "react";
-import { joinRoom, getRoomDetails } from "../../api/api";
+import { useState, useEffect, useContext, useCallback } from "react";
+import { joinRoom } from "../../api/api";
 import EnterName from "./EnterName";
 import CodeEditor from "./CodeEditor";
-import { DarkModeContext } from "../../App";
+import { DarkModeContext, UserContext } from "../../App";
+import { DEFAULT_CODE } from "../../util/constants";
 
 function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { isDark } = useContext(DarkModeContext);
-  const [name, setName] = useState('');
+  const { userId } = useContext(UserContext);
+  const [userName, setUserName] = useState('');
   const [isJoined, setIsJoined] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [roomName, setRoomName] = useState('sce interview');
+  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [users, setUsers] = useState<Array<{
+    userId: string;
+    userName: string;
+    cursorPosition: {
+      lineNumber: number;
+      column: number 
+    } | null
+  }>>([]);
+  const [code, setCode] = useState(DEFAULT_CODE);
 
-  useEffect(() => {
-    const storedData = localStorage.getItem(`room-${roomId}-name`);
-    if (storedData) {
-      try {
-        const { name: storedName, expiry } = JSON.parse(storedData);
-        const now = new Date().getTime();
-        if (now < expiry) {
-          setName(storedName);
-          setIsJoined(true);
-        } else {
-          localStorage.removeItem(`room-${roomId}-name`);
-        }
-      } catch (e) {
-        localStorage.removeItem(`room-${roomId}-name`);
-      }
-    }
-  }, [roomId]);
-
-  useEffect(() => {
-    const fetchRoomDetails = async () => {
-      if (roomId) {
-        const response = await getRoomDetails(roomId);
-        if (response.success && response.data.roomName) {
-          setRoomName(response.data.roomName);
-        }
-      }
-    };
-    fetchRoomDetails();
-  }, [roomId]);
-
-  const handleJoinRoom = async () => {
+  const joinRoomWithName = useCallback(async (name: string) => {
     if (!name.trim() || !roomId) return;
     
     setIsLoading(true);
-    const response = await joinRoom(name, roomId);
+    const response = await joinRoom(userId, name, roomId);
     setIsLoading(false);
 
     if (response.success) {
+      setRoomName(response.data.roomName || 'sce interview');
+      setCode(response.data.document || DEFAULT_CODE);
+      setUsers(response.data.users || []);
       const now = new Date().getTime();
-      const expiry = now + (24 * 60 * 60 * 1000); // 24 hours
-      const data = JSON.stringify({ name, expiry });
-      localStorage.setItem(`room-${roomId}-name`, data);
+      const expiry = now + (24 * 60 * 60 * 1000);
+      const data = JSON.stringify({ userName: name, expiry });
+      localStorage.setItem(`goderpad-cookie-${roomId}`, data);
       setIsJoined(true);
     } else {
       alert(response.error || 'Failed to join room');
       navigate('/');
     }
+  }, [roomId, userId, navigate]);
+
+  const handleJoinRoom = async () => {
+    joinRoomWithName(userName);
   };
+
+  const sendWsMessage = (message: any) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(message));
+    }
+  };
+
+  // When this page loads in, we need to check if the user already joined from the home page by accessing the local storage
+  useEffect(() => {
+    if (!roomId) {
+      navigate('/');
+      return;
+    }
+    const storedData = localStorage.getItem(`goderpad-cookie-${roomId}`);
+    if (storedData) {
+      try {
+        const {
+          userName: storedUserName,
+          expiry
+        } = JSON.parse(storedData);
+        const now = new Date().getTime();
+        if (now < expiry) {
+          joinRoomWithName(storedUserName);
+          // update the expiry time
+          const updatedData = JSON.parse(storedData);
+          updatedData.expiry = now + (24 * 60 * 60 * 1000);
+          localStorage.setItem(`goderpad-cookie-${roomId}`, JSON.stringify(updatedData));
+        } else {
+          localStorage.removeItem(`goderpad-cookie-${roomId}`);
+        }
+      } catch (e) {
+        localStorage.removeItem(`goderpad-cookie-${roomId}`);
+      }
+    }
+  }, [roomId, navigate, joinRoomWithName]);
+
+  // Setup WebSocket connection and handlers when the user successfully joins the room
+  useEffect(() => {
+    if (!isJoined || !roomId) return;
+    const websocket = new WebSocket(`ws://localhost:8080/ws/${roomId}`);
+    setWs(websocket);
+
+    websocket.onopen = async () => {
+      sendWsMessage({
+        userId,
+        type: 'user_joined',
+        payload: {
+          roomId,
+          userName
+        }
+      });
+    }
+
+    websocket.onclose = () => {
+      sendWsMessage({
+        userId,
+        type: 'user_left',
+        payload: {
+          roomId,
+        }
+      })
+    }
+
+    websocket.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+
+      switch (message.type) {
+        case 'cursor_update':
+          const user = users.find(u => u.userId === message.payload.userId);
+          if (user) {
+            user.cursorPosition = {
+              lineNumber: message.payload.lineNumber,
+              column: message.payload.column
+            };
+            setUsers([...users]);
+          }
+          break;
+
+        case 'user_joined':
+          setUsers(prevUsers => [
+            ...prevUsers,
+            {
+              userId: message.payload.userId,
+              userName: message.payload.userName,
+              cursorPosition: {
+                lineNumber: 1,
+                column: 1
+              }
+            }
+          ])
+          break;
+
+        case 'user_left':
+          setUsers(prevUsers => prevUsers.filter(u => u.userId !== message.payload.userId));
+          break;
+
+        case 'code_update':
+          setCode(message.payload.code);
+          break;
+
+        default:
+          break;
+      }
+    }
+
+    return () => {
+      websocket.close();
+      setWs(null);
+    };
+  }, [isJoined, roomId]);
 
   if (!isJoined) {
     return (
       <EnterName
         roomName={roomName}
-        name={name}
-        setName={setName}
+        userName={userName}
+        setUserName={setUserName}
         isLoading={isLoading}
         onJoinRoom={handleJoinRoom}
       />
@@ -82,7 +181,12 @@ function RoomPage() {
           {roomName}
         </h1>
       </div>
-      <CodeEditor />
+      <CodeEditor
+        code={code}
+        setCode={setCode}
+        sendWsMessage={sendWsMessage}
+        users={users}
+      />
     </div>
   );
 }
