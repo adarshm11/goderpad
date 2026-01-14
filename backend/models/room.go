@@ -3,6 +3,8 @@ package models
 import (
 	"sync"
 	"time"
+
+	"goderpad/utils"
 )
 
 type Room struct {
@@ -19,7 +21,7 @@ func NewRoom(roomID, roomName string) *Room {
 		RoomID:    roomID,
 		RoomName:  roomName,
 		CreatedAt: time.Now(),
-		Document:  "",
+		Document:  utils.DEFAULT_CODE,
 		Users:     make(map[string]*User),
 	}
 }
