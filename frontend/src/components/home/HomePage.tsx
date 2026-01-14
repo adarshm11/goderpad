@@ -18,7 +18,7 @@ function HomePage() {
     } else {
       response = await createRoom(userId, userName, roomName);
     }
-    if (response.success) {
+    if (response.ok) {
       const roomId = response.data.roomId;
       const expiry = new Date().getTime() + (24 * 60 * 60 * 1000); // 24 hours
       const data = JSON.stringify({ userName, expiry });
@@ -43,7 +43,7 @@ function HomePage() {
               id='name'
               type='text'
               value={userName}
-              onChange={(e) => { setUserName(e.target.value); }}
+              onChange={(e) => setUserName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && userName.trim()) {
                   handleCreateRoom();
@@ -65,7 +65,7 @@ function HomePage() {
               id='roomName'
               type='text'
               value={roomName}
-              onChange={(e) => { setRoomName(e.target.value); }}
+              onChange={(e) => setRoomName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && userName.trim()) {
                   handleCreateRoom();

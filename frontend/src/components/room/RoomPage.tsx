@@ -33,7 +33,7 @@ function RoomPage() {
     const response = await joinRoom(userId, name, roomId);
     setIsLoading(false);
 
-    if (response.success) {
+    if (response.ok) {
       setRoomName(response.data.roomName || 'sce interview');
       setCode(response.data.document || DEFAULT_CODE);
       setUsers(response.data.users || []);
