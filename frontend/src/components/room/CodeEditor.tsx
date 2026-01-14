@@ -110,8 +110,8 @@ function CodeEditor({ code, setCode, sendWsMessage, users }: CodeEditorProps) {
     <div className={`flex flex-row gap-4 ${isDark ? 'bg-slate-900' : 'bg-gray-100'} p-6 pt-20`}>
       <div className={`border-2 ${isDark ? 'border-white' : 'border-gray-900'} rounded-lg overflow-hidden w-1/2`}>
         <Editor 
-          height="85vh" 
-          defaultLanguage={"javascript"} 
+          height='85vh' 
+          defaultLanguage={'javascript'} 
           value={code} 
           theme={isDark ? 'slate-dark' : 'vs'}
           beforeMount={handleEditorWillMount}
@@ -127,10 +127,10 @@ function CodeEditor({ code, setCode, sendWsMessage, users }: CodeEditorProps) {
       </div>
       <div className={`w-1/2 border-2 ${isDark ? 'border-white' : 'border-gray-900'} rounded-lg overflow-hidden h-[85vh] relative`}>
         {hasError && (
-          <div className="absolute top-2 right-2 z-10">
+          <div className='absolute top-2 right-2 z-10'>
             <button 
               onClick={handleSandpackReload}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+              className='bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded'
             >
               Reload Preview
             </button>
@@ -138,7 +138,7 @@ function CodeEditor({ code, setCode, sendWsMessage, users }: CodeEditorProps) {
         )}
         <SandpackProvider
           key={sandpackKey}
-          template={"react"}
+          template={'react'}
           files={{
             '/App.js': debouncedCode,
           }}

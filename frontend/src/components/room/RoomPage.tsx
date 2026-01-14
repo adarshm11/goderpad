@@ -1,10 +1,10 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect, useContext } from "react";
-import { joinRoom } from "../../api/api";
-import EnterName from "./EnterName";
-import CodeEditor from "./CodeEditor";
-import { DarkModeContext, UserContext } from "../../App";
-import { DEFAULT_CODE } from "../../util/constants";
+import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useContext } from 'react';
+import { joinRoom } from '../../api/api';
+import EnterName from './EnterName';
+import CodeEditor from './CodeEditor';
+import { DarkModeContext, UserContext } from '../../App';
+import { DEFAULT_CODE } from '../../util/constants';
 
 function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -15,6 +15,7 @@ function RoomPage() {
   const [isJoined, setIsJoined] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [roomName, setRoomName] = useState('sce interview');
+  const [code, setCode] = useState(DEFAULT_CODE);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [users, setUsers] = useState<Array<{
     userId: string;
@@ -24,7 +25,6 @@ function RoomPage() {
       column: number 
     } | null
   }>>([]);
-  const [code, setCode] = useState(DEFAULT_CODE);
 
   const handleJoinRoom = async () => {
     if (!userName.trim() || !roomId) return;
