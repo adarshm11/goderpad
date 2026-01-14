@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect, useContext, useCallback } from "react";
+import { useState, useEffect, useContext } from "react";
 import { joinRoom } from "../../api/api";
 import EnterName from "./EnterName";
 import CodeEditor from "./CodeEditor";
@@ -26,11 +26,11 @@ function RoomPage() {
   }>>([]);
   const [code, setCode] = useState(DEFAULT_CODE);
 
-  const joinRoomWithName = useCallback(async (name: string) => {
-    if (!name.trim() || !roomId) return;
+  const handleJoinRoom = async () => {
+    if (!userName.trim() || !roomId) return;
     
     setIsLoading(true);
-    const response = await joinRoom(userId, name, roomId);
+    const response = await joinRoom(userId, userName, roomId);
     setIsLoading(false);
 
     if (response.ok) {
@@ -39,17 +39,13 @@ function RoomPage() {
       setUsers(response.data.users || []);
       const now = new Date().getTime();
       const expiry = now + (24 * 60 * 60 * 1000);
-      const data = JSON.stringify({ userName: name, expiry });
+      const data = JSON.stringify({ userName, expiry });
       localStorage.setItem(`goderpad-cookie-${roomId}`, data);
       setIsJoined(true);
     } else {
       alert(response.error || 'Failed to join room');
       navigate('/');
     }
-  }, [roomId, userId, navigate]);
-
-  const handleJoinRoom = async () => {
-    joinRoomWithName(userName);
   };
 
   const sendWsMessage = (message: any) => {
@@ -58,34 +54,47 @@ function RoomPage() {
     }
   };
 
-  // When this page loads in, we need to check if the user already joined from the home page by accessing the local storage
   useEffect(() => {
     if (!roomId) {
       navigate('/');
       return;
     }
+
     const storedData = localStorage.getItem(`goderpad-cookie-${roomId}`);
-    if (storedData) {
+    if (!storedData) return;
+
+    const joinWithStoredData = async () => {
       try {
-        const {
-          userName: storedUserName,
-          expiry
-        } = JSON.parse(storedData);
+        const { userName: storedUserName, expiry } = JSON.parse(storedData);
         const now = new Date().getTime();
-        if (now < expiry) {
-          joinRoomWithName(storedUserName);
-          // update the expiry time
-          const updatedData = JSON.parse(storedData);
-          updatedData.expiry = now + (24 * 60 * 60 * 1000);
-          localStorage.setItem(`goderpad-cookie-${roomId}`, JSON.stringify(updatedData));
+        
+        if (now >= expiry) {
+          localStorage.removeItem(`goderpad-cookie-${roomId}`);
+          return;
+        }
+
+        const response = await joinRoom(userId, storedUserName, roomId);
+        
+        if (response.ok) {
+          setRoomName(response.data.roomName || 'sce interview');
+          setCode(response.data.document || DEFAULT_CODE);
+          setUsers(response.data.users || []);
+          setUserName(storedUserName);
+          setIsJoined(true);
+          
+          // Update expiry
+          const updatedExpiry = now + (24 * 60 * 60 * 1000);
+          localStorage.setItem(`goderpad-cookie-${roomId}`, JSON.stringify({ userName: storedUserName, expiry: updatedExpiry }));
         } else {
           localStorage.removeItem(`goderpad-cookie-${roomId}`);
         }
       } catch (e) {
         localStorage.removeItem(`goderpad-cookie-${roomId}`);
       }
-    }
-  }, [roomId, navigate, joinRoomWithName]);
+    };
+
+    joinWithStoredData();
+  }, [roomId, userId, navigate]);
 
   // Setup WebSocket connection and handlers when the user successfully joins the room
   useEffect(() => {
