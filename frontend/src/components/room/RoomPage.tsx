@@ -127,17 +127,6 @@ function RoomPage() {
       const message = JSON.parse(event.data);
 
       switch (message.type) {
-        case 'cursor_update':
-          const user = users.find(u => u.userId === message.payload.userId);
-          if (user) {
-            user.cursorPosition = {
-              lineNumber: message.payload.lineNumber,
-              column: message.payload.column
-            };
-            setUsers([...users]);
-          }
-          break;
-
         case 'user_joined':
           setUsers(prevUsers => [
             ...prevUsers,
@@ -154,6 +143,17 @@ function RoomPage() {
 
         case 'user_left':
           setUsers(prevUsers => prevUsers.filter(u => u.userId !== message.payload.userId));
+          break;
+
+        case 'cursor_update':
+          const user = users.find(u => u.userId === message.payload.userId);
+          if (user) {
+            user.cursorPosition = {
+              lineNumber: message.payload.lineNumber,
+              column: message.payload.column
+            };
+            setUsers([...users]);
+          }
           break;
 
         case 'code_update':
