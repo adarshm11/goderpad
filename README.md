@@ -1,1 +1,1 @@
-# sce-goderpad
+# goderpad
