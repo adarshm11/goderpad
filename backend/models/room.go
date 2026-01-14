@@ -13,17 +13,20 @@ type Room struct {
 	CreatedAt time.Time
 	Document  string
 	Users     map[string]*User
+	Broadcast chan BroadcastMessage
 	mu        sync.Mutex
 }
 
 func NewRoom(roomID, roomName string) *Room {
-	return &Room{
+	room := &Room{
 		RoomID:    roomID,
 		RoomName:  roomName,
 		CreatedAt: time.Now(),
 		Document:  utils.DEFAULT_CODE,
 		Users:     make(map[string]*User),
 	}
+	go room.BroadcastToUsers()
+	return room
 }
 
 func (r *Room) AddUser(user *User) {
@@ -52,4 +55,8 @@ func (r *Room) UpdateDocument(content string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.Document = content
+}
+
+func (r *Room) BroadcastToUsers() {
+	// this function reads broadcast messages from the room's broadcast channel and funnels to the users
 }
