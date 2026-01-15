@@ -17,18 +17,12 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// Plan:
-// Websocket handler listens for incoming connection requests in the form: /ws/:roomId
-// Then it upgrades the connection for that user to a websocket connection
-// Then the websocket handler listens for messages, extracts its roomId and userId
-// Then it fetches the room from the hub using roomId and passes the message to the room's Broadcast channel
-// The Room listens for messages on its Broadcast channel and funnels them to the respective users' Send channels
-// That excludes the user who sent the message
-// The users listen for messages on their Send channels and write them to their websocket connections
+// This handler listens for incoming websocket connections from users
 func WebSocketHandler(c *gin.Context) {
 	log.Printf("WebSocket request received: %s", c.Request.URL.Path)
 	roomID := c.Param("roomID")
 	userID := c.Query("userId")
+
 	hub := models.GetHub()
 	room, exists := hub.GetRoom(roomID)
 	if !exists {
@@ -65,10 +59,14 @@ func readBroadcastsFromUser(user *models.User, room *models.Room) {
 			break
 		}
 		if msg.Type == "cursor_update" {
-			if line, ok := msg.Payload["line"].(int); ok {
+			if line, ok := msg.Payload["lineNumber"].(int); ok {
 				if column, ok := msg.Payload["column"].(int); ok {
 					user.UpdateCursorPosition(line, column)
+				} else {
+					continue
 				}
+			} else {
+				continue
 			}
 		}
 		room.Broadcast <- msg
