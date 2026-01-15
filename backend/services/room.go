@@ -36,3 +36,12 @@ func JoinRoom(userID, name, roomID string) (map[string]any, error) {
 	}
 	return response, nil
 }
+
+func GetRoomName(roomID string) (string, error) {
+	hub := models.GetHub()
+	room, exists := hub.GetRoom(roomID)
+	if !exists {
+		return "", models.ErrRoomNotFound
+	}
+	return room.RoomName, nil
+}

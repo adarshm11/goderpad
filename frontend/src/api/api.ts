@@ -43,3 +43,15 @@ export async function joinRoom(userId: string, name: string, roomId: string) {
     };
   }
 }
+
+export async function getRoomName(roomId: string) {
+  try {
+    const response = await fetch(`${API_URL}/getRoomName/${roomId}`);
+    return await response.json();
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Network error'
+    }
+  }
+}

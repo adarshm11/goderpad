@@ -19,6 +19,8 @@ func main() {
 
 	r.POST("/createRoom", handlers.CreateRoomHandler)
 	r.POST("/joinRoom", handlers.JoinRoomHandler)
+	r.GET("/getRoomName/:roomID", handlers.GetRoomNameHandler)
+
 	r.GET("/ws/:roomID", handlers.WebSocketHandler)
 
 	r.Run(":8080")

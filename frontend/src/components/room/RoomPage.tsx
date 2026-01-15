@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useContext } from 'react';
-import { joinRoom } from '../../api/api';
+import { joinRoom, getRoomName } from '../../api/api';
 import EnterName from './EnterName';
 import CodeEditor from './CodeEditor';
 import { DarkModeContext, UserContext } from '../../App';
@@ -47,6 +47,30 @@ function RoomPage() {
       navigate('/');
     }
   };
+
+  useEffect(() => {
+    if (!roomId) {
+      navigate('/');
+      return;
+    }
+
+    const fetchRoomName = async () => {
+      try {
+        const response = await getRoomName(roomId);
+        if (response.ok) {
+          setRoomName(response.data.roomName || 'sce interview');
+        } else {
+          alert(response.error || 'Failed to fetch room name');
+          navigate('/');
+        }
+      } catch (err) {
+        alert('Failed to fetch room name');
+        navigate('/');
+      }
+    };
+
+    fetchRoomName();
+  }, [roomId, navigate]);
 
   useEffect(() => {
     if (!roomId) {

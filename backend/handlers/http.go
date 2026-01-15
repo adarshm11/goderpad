@@ -57,3 +57,28 @@ func JoinRoomHandler(c *gin.Context) {
 		},
 	})
 }
+
+func GetRoomNameHandler(c *gin.Context) {
+	roomID := c.Param("roomID")
+	if roomID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Room ID is required"})
+		return
+	}
+
+	roomName, err := services.GetRoomName(roomID)
+	if err != nil {
+		if errors.Is(err, models.ErrRoomNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"ok": false, "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"ok": true,
+		"data": map[string]any{
+			"roomName": roomName,
+		},
+	})
+}

@@ -18,8 +18,8 @@ type User struct {
 }
 
 type CursorPosition struct {
-	Line   int
-	Column int
+	Line   int `json:"lineNumber"`
+	Column int `json:"column"`
 }
 
 func CreateUser(userID, name string) *User {
@@ -47,8 +47,7 @@ func (u *User) UpdateCursorPosition(line, column int) {
 	u.CursorPosition.Column = column
 }
 
-// this function reads incoming messages from the Send channel
-// then it handles the functionality required and sends to the user's websocket connection
+// this function reads incoming messages from the Send channel and sends to the user's websocket connection
 func (u *User) HandleBroadcasts() {
 	for {
 		select {
