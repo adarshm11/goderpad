@@ -65,7 +65,7 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
           userId,
           type: 'code_update',
           payload: {
-          code: value
+            code: value
           }
         }));
       }
