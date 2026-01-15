@@ -6,7 +6,7 @@ import { SandpackProvider, SandpackPreview } from '@codesandbox/sandpack-react';
 interface CodeEditorProps {
   code: string;
   setCode: (code: string) => void;
-  sendWsMessage: (message: any) => void;
+  ws: WebSocket | null;
   users: Array<{
     userId: string;
     userName: string;
@@ -17,15 +17,15 @@ interface CodeEditorProps {
   }>;
 }
 
-function CodeEditor({ code, setCode, sendWsMessage, users }: CodeEditorProps) {
+function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
   const { isDark } = useContext(DarkModeContext);
   const { userId } = useContext(UserContext);
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
-  const decorationIdsRef = useRef<string[]>([]);
   const [sandpackKey, setSandpackKey] = useState(0);
   const [hasError, setHasError] = useState(false);
   const [debouncedCode, setDebouncedCode] = useState(code);
+  const decorationsRef = useRef<string[]>([]);
 
   const handleEditorWillMount = (monaco: any) => {
     monaco.editor.defineTheme('slate-dark', {
@@ -43,14 +43,16 @@ function CodeEditor({ code, setCode, sendWsMessage, users }: CodeEditorProps) {
     monacoRef.current = monaco;
 
     editor.onDidChangeCursorPosition((e: any) => {
-      sendWsMessage({
-        userId,
-        type: 'cursor_update',
-        payload: {
-          lineNumber: e.position.lineNumber,
-          column: e.position.column
-        }
-      });
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          userId,
+          type: 'cursor_update',
+          payload: {
+            lineNumber: e.position.lineNumber,
+            column: e.position.column
+          }
+        }));
+      }
     });
   }
 
@@ -58,15 +60,17 @@ function CodeEditor({ code, setCode, sendWsMessage, users }: CodeEditorProps) {
     if (value !== undefined) {
       setCode(value);
       console.clear();
-      sendWsMessage({
-        userId,
-        type: 'code_update',
-        payload: {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          userId,
+          type: 'code_update',
+          payload: {
           code: value
-        }
-      });
+          }
+        }));
+      }
     }
-  }
+  };
 
   const handleSandpackReload = () => {
     setHasError(false);
@@ -81,30 +85,88 @@ function CodeEditor({ code, setCode, sendWsMessage, users }: CodeEditorProps) {
     return () => clearTimeout(timer);
   }, [code]);
 
+  // Add effect to update cursor decorations when users change
   useEffect(() => {
-    if (!monacoRef.current || !editorRef.current) return;
+    if (!editorRef.current || !monacoRef.current) return;
 
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+
+    // Remove old decorations
+    decorationsRef.current = editor.deltaDecorations(decorationsRef.current, []);
+
+    // Create new decorations for other users' cursors
     const newDecorations = users
-      .filter(user => user.cursorPosition !== null)
-      .map(user => ({
-        range: new monacoRef.current.Range(
-          user.cursorPosition!.lineNumber,
-          user.cursorPosition!.column,
-          user.cursorPosition!.lineNumber,
-          user.cursorPosition!.column
-        ),
-        options: {
-          className: 'remote-cursor',
-          hoverMessage: { value: user.userName },
-          beforeContentClassName: `remote-cursor-label`,
-        }
-      }));
+      .filter(user => user.userId !== userId && user.cursorPosition)
+      .map(user => {
+        const position = user.cursorPosition!;
+        return {
+          range: new monaco.Range(
+            position.lineNumber,
+            position.column,
+            position.lineNumber,
+            position.column
+          ),
+          options: {
+            className: `cursor-${user.userId}`,
+            beforeContentClassName: `cursor-label-${user.userId}`,
+            stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+            hoverMessage: { value: user.userName }
+          }
+        };
+      });
 
-    decorationIdsRef.current = editorRef.current.deltaDecorations(
-      decorationIdsRef.current,
-      newDecorations
-    );
-  }, [users]);
+    decorationsRef.current = editor.deltaDecorations([], newDecorations);
+
+    // Add dynamic styles for each user's cursor
+    users
+      .filter(user => user.userId !== userId)
+      .forEach((user, index) => {
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F'];
+        const color = colors[index % colors.length];
+
+        // Remove old style if exists
+        const oldStyle = document.getElementById(`cursor-style-${user.userId}`);
+        if (oldStyle) oldStyle.remove();
+
+        // Add new style
+        const style = document.createElement('style');
+        style.id = `cursor-style-${user.userId}`;
+        style.textContent = `
+          .cursor-${user.userId} {
+            border-left: 2px solid ${color} !important;
+            animation: blink 1s infinite;
+          }
+          .cursor-label-${user.userId}::before {
+            content: "${user.userName}";
+            position: absolute;
+            top: -18px;
+            left: -2px;
+            background: ${color};
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            z-index: 10;
+          }
+          @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0.3; }
+          }
+        `;
+        document.head.appendChild(style);
+      });
+
+    // Cleanup function
+    return () => {
+      users.forEach(user => {
+        const style = document.getElementById(`cursor-style-${user.userId}`);
+        if (style) style.remove();
+      });
+    };
+  }, [users, userId]);
 
   return (
     <div className={`flex flex-row gap-4 ${isDark ? 'bg-slate-900' : 'bg-gray-100'} p-6 pt-20`}>

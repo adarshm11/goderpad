@@ -48,12 +48,6 @@ function RoomPage() {
     }
   };
 
-  const sendWsMessage = (message: any) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(message));
-    }
-  };
-
   useEffect(() => {
     if (!roomId) {
       navigate('/');
@@ -103,24 +97,18 @@ function RoomPage() {
     setWs(websocket);
 
     websocket.onopen = async () => {
-      sendWsMessage({
+      websocket.send(JSON.stringify({
         userId,
         type: 'user_joined',
         payload: {
           roomId,
           userName
         }
-      });
+      }));
     }
 
     websocket.onclose = () => {
-      sendWsMessage({
-        userId,
-        type: 'user_left',
-        payload: {
-          roomId,
-        }
-      })
+      console.log('WebSocket connection closed');
     }
 
     websocket.onmessage = (event) => {
@@ -146,14 +134,13 @@ function RoomPage() {
           break;
 
         case 'cursor_update':
-          const user = users.find(u => u.userId === message.payload.userId);
-          if (user) {
-            user.cursorPosition = {
-              lineNumber: message.payload.lineNumber,
-              column: message.payload.column
-            };
-            setUsers([...users]);
-          }
+          setUsers(prevUsers => 
+            prevUsers.map(u => 
+              u.userId === message.payload.userId
+                ? { ...u, cursorPosition: { lineNumber: message.payload.lineNumber, column: message.payload.column } }
+                : u
+            )
+          );
           break;
 
         case 'code_update':
@@ -166,6 +153,14 @@ function RoomPage() {
     }
 
     return () => {
+      // Send user_left before closing
+      if (websocket.readyState === WebSocket.OPEN) {
+        websocket.send(JSON.stringify({
+          userId,
+          type: 'user_left',
+          payload: { roomId }
+        }));
+      }
       websocket.close();
       setWs(null);
     };
@@ -193,7 +188,7 @@ function RoomPage() {
       <CodeEditor
         code={code}
         setCode={setCode}
-        sendWsMessage={sendWsMessage}
+        ws={ws}
         users={users}
       />
     </div>
