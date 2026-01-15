@@ -99,7 +99,7 @@ function RoomPage() {
   // Setup WebSocket connection and handlers when the user successfully joins the room
   useEffect(() => {
     if (!isJoined || !roomId) return;
-    const websocket = new WebSocket(`ws://localhost:8080/ws/${roomId}`);
+    const websocket = new WebSocket(`ws://localhost:8080/ws/${roomId}?userId=${userId}`);
     setWs(websocket);
 
     websocket.onopen = async () => {
