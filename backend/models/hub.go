@@ -62,6 +62,7 @@ func (h *Hub) ExpireRooms() {
 		h.mu.Lock()
 		for roomID, room := range h.Rooms {
 			if time.Since(room.CreatedAt) > time.Hour*24 {
+				room.Close() // close the room's channels and stop its goroutines
 				delete(h.Rooms, roomID)
 			}
 		}

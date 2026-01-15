@@ -10,7 +10,7 @@ const (
 )
 
 type BroadcastMessage struct {
-	UserID  string `json:"userId"`
-	Type    string `json:"type"`
-	Payload any    `json:"payload"`
+	UserID  string         `json:"userId"`
+	Type    string         `json:"type"`
+	Payload map[string]any `json:"payload"`
 }
