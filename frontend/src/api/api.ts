@@ -16,7 +16,7 @@ export async function createRoom(userId: string, name: string, roomName: string)
     return await response.json()
   } catch (err) {
     return {
-      success: false,
+      ok: false,
       error: err instanceof Error ? err.message : 'Network error'
     };
   }
@@ -38,7 +38,7 @@ export async function joinRoom(userId: string, name: string, roomId: string) {
     return await response.json();
   } catch (err) {
     return {
-      success: false,
+      ok: false,
       error: err instanceof Error ? err.message : 'Network error'
     };
   }
