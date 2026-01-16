@@ -1,6 +1,8 @@
 package models
 
 import (
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -16,6 +18,11 @@ type Room struct {
 	Broadcast chan BroadcastMessage `json:"-"`
 	done      chan struct{}         `json:"-"`
 	mu        sync.Mutex            `json:"-"`
+
+	// File management
+	dirty        bool        `json:"-"`
+	lastSave     time.Time   `json:"-"`
+	saveDebounce *time.Timer `json:"-"`
 }
 
 func NewRoom(roomID, roomName string) *Room {
@@ -66,12 +73,6 @@ func (r *Room) GetCurrentUsers() []*User {
 	return users
 }
 
-func (r *Room) UpdateDocument(content string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.Document = content
-}
-
 // BroadcastToUsers reads broadcast messages from the room's broadcast channel and funnels to the users
 func (r *Room) BroadcastToUsers() {
 	for {
@@ -83,6 +84,8 @@ func (r *Room) BroadcastToUsers() {
 			if msg.Type == "code_update" {
 				if code, ok := msg.Payload["code"].(string); ok {
 					r.Document = code
+					r.dirty = true
+					r.scheduleSave()
 				}
 			}
 			for _, user := range r.Users {
@@ -94,4 +97,36 @@ func (r *Room) BroadcastToUsers() {
 			r.mu.Unlock()
 		}
 	}
+}
+
+func (r *Room) scheduleSave() {
+	if r.saveDebounce != nil {
+		r.saveDebounce.Stop()
+	}
+	r.saveDebounce = time.AfterFunc(3*time.Second, func() {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		if r.dirty {
+			r.saveToFile()
+		}
+	})
+}
+
+func (r *Room) saveToFile() {
+	if !r.dirty {
+		return
+	}
+
+	dirPath := filepath.Join("past", r.RoomID)
+	if err := os.MkdirAll(dirPath, 0755); err != nil {
+		return
+	}
+
+	filePath := filepath.Join(dirPath, "App.js")
+	if err := os.WriteFile(filePath, []byte(r.Document), 0644); err != nil {
+		return
+	}
+
+	r.dirty = false
+	r.lastSave = time.Now()
 }

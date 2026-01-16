@@ -6,6 +6,8 @@ services:
     container_name: goderpad-backend
     ports:
       - "7778:7778"
+    volumes:
+      - ./past:/app/past
 
   frontend:
     build:
