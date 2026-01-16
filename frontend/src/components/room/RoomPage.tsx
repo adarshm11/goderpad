@@ -125,6 +125,7 @@ function RoomPage() {
         userId,
         type: 'user_joined',
         payload: {
+          userId,
           roomId,
           userName
         }
@@ -132,7 +133,6 @@ function RoomPage() {
     }
 
     websocket.onclose = () => {
-      console.log('WebSocket connection closed');
     }
 
     websocket.onmessage = (event) => {
@@ -154,13 +154,13 @@ function RoomPage() {
           break;
 
         case 'user_left':
-          setUsers(prevUsers => prevUsers.filter(u => u.userId !== message.payload.userId));
+          setUsers(prevUsers => prevUsers.filter(u => u.userId !== message.userId));
           break;
 
         case 'cursor_update':
           setUsers(prevUsers => 
             prevUsers.map(u => 
-              u.userId === message.payload.userId
+              u.userId === message.userId
                 ? { ...u, cursorPosition: { lineNumber: message.payload.lineNumber, column: message.payload.column } }
                 : u
             )

@@ -22,10 +22,19 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
   const { userId } = useContext(UserContext);
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);
+  const wsRef = useRef<WebSocket | null>(ws);
   const [sandpackKey, setSandpackKey] = useState(0);
   const [hasError, setHasError] = useState(false);
   const [debouncedCode, setDebouncedCode] = useState(code);
   const decorationsRef = useRef<string[]>([]);
+  const [visibleLabels, setVisibleLabels] = useState<Set<string>>(new Set());
+  const labelTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const prevCursorPositions = useRef<Map<string, string>>(new Map());
+
+  // Keep wsRef in sync with ws prop
+  useEffect(() => {
+    wsRef.current = ws;
+  }, [ws]);
 
   const handleEditorWillMount = (monaco: any) => {
     monaco.editor.defineTheme('slate-dark', {
@@ -43,8 +52,8 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
     monacoRef.current = monaco;
 
     editor.onDidChangeCursorPosition((e: any) => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
           userId,
           type: 'cursor_update',
           payload: {
@@ -60,8 +69,8 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
     if (value !== undefined) {
       setCode(value);
       console.clear();
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
           userId,
           type: 'code_update',
           payload: {
@@ -85,21 +94,60 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
     return () => clearTimeout(timer);
   }, [code]);
 
-  // Add effect to update cursor decorations when users change
+  // Effect to track cursor movement and manage label visibility timers
+  useEffect(() => {
+    users
+      .filter(user => user.userId !== userId && user.cursorPosition)
+      .forEach(user => {
+        const posKey = `${user.cursorPosition!.lineNumber}:${user.cursorPosition!.column}`;
+        const prevPos = prevCursorPositions.current.get(user.userId);
+        
+        if (prevPos !== posKey) {
+          // Cursor moved - show label and reset timer
+          prevCursorPositions.current.set(user.userId, posKey);
+          setVisibleLabels(prev => new Set(prev).add(user.userId));
+          
+          // Clear existing timer
+          const existingTimer = labelTimersRef.current.get(user.userId);
+          if (existingTimer) clearTimeout(existingTimer);
+          
+          // Set new timer to hide label after 3 seconds
+          const timer = setTimeout(() => {
+            setVisibleLabels(prev => {
+              const next = new Set(prev);
+              next.delete(user.userId);
+              return next;
+            });
+            labelTimersRef.current.delete(user.userId);
+          }, 3000);
+          labelTimersRef.current.set(user.userId, timer);
+        }
+      });
+
+    // Cleanup timers for users who left
+    return () => {
+      labelTimersRef.current.forEach((timer, odUserId) => {
+        if (!users.find(u => u.userId === odUserId)) {
+          clearTimeout(timer);
+          labelTimersRef.current.delete(odUserId);
+        }
+      });
+    };
+  }, [users, userId]);
+
+  // Effect to update cursor decorations
   useEffect(() => {
     if (!editorRef.current || !monacoRef.current) return;
 
     const editor = editorRef.current;
     const monaco = monacoRef.current;
 
-    // Remove old decorations
-    decorationsRef.current = editor.deltaDecorations(decorationsRef.current, []);
-
     // Create new decorations for other users' cursors
     const newDecorations = users
-      .filter(user => user.userId !== userId && user.cursorPosition)
+      .filter(user => user.userId !== userId && user.cursorPosition && user.userName)
       .map(user => {
         const position = user.cursorPosition!;
+        const showLabel = visibleLabels.has(user.userId);
         return {
           range: new monaco.Range(
             position.lineNumber,
@@ -109,18 +157,19 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
           ),
           options: {
             className: `cursor-${user.userId}`,
-            beforeContentClassName: `cursor-label-${user.userId}`,
+            beforeContentClassName: showLabel ? `cursor-label-${user.userId}` : undefined,
             stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
             hoverMessage: { value: user.userName }
           }
         };
       });
 
-    decorationsRef.current = editor.deltaDecorations([], newDecorations);
+    // Apply decorations immediately (delta from old to new)
+    decorationsRef.current = editor.deltaDecorations(decorationsRef.current, newDecorations);
 
     // Add dynamic styles for each user's cursor
     users
-      .filter(user => user.userId !== userId)
+      .filter(user => user.userId !== userId && user.userName)
       .forEach((user, index) => {
         const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F'];
         const color = colors[index % colors.length];
@@ -135,13 +184,15 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
         style.textContent = `
           .cursor-${user.userId} {
             border-left: 2px solid ${color} !important;
-            animation: blink 1s infinite;
+          }
+          .cursor-label-${user.userId} {
+            position: relative;
           }
           .cursor-label-${user.userId}::before {
             content: "${user.userName}";
             position: absolute;
             top: -18px;
-            left: -2px;
+            left: 0;
             background: ${color};
             color: white;
             padding: 2px 6px;
@@ -149,11 +200,8 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
             font-size: 11px;
             font-weight: 500;
             white-space: nowrap;
-            z-index: 10;
-          }
-          @keyframes blink {
-            0%, 49% { opacity: 1; }
-            50%, 100% { opacity: 0.3; }
+            z-index: 100;
+            pointer-events: none;
           }
         `;
         document.head.appendChild(style);
@@ -166,7 +214,7 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
         if (style) style.remove();
       });
     };
-  }, [users, userId]);
+  }, [users, userId, visibleLabels]);
 
   return (
     <div className={`flex flex-row gap-4 ${isDark ? 'bg-slate-900' : 'bg-gray-100'} p-6 pt-20`}>

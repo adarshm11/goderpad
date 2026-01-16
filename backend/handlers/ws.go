@@ -45,6 +45,21 @@ func WebSocketHandler(c *gin.Context) {
 
 	user.Conn = conn
 
+	// Send current cursor positions of all other users to the newly connected user
+	for _, otherUser := range room.GetCurrentUsers() {
+		if otherUser.UserID != userID {
+			pos := otherUser.GetCursorPosition()
+			conn.WriteJSON(models.BroadcastMessage{
+				UserID: otherUser.UserID,
+				Type:   "cursor_update",
+				Payload: map[string]any{
+					"lineNumber": pos.Line,
+					"column":     pos.Column,
+				},
+			})
+		}
+	}
+
 	// Start listening for messages from this user's websocket connection
 	go readBroadcastsFromUser(user, room)
 }
@@ -59,9 +74,10 @@ func readBroadcastsFromUser(user *models.User, room *models.Room) {
 			break
 		}
 		if msg.Type == "cursor_update" {
-			if line, ok := msg.Payload["lineNumber"].(int); ok {
-				if column, ok := msg.Payload["column"].(int); ok {
-					user.UpdateCursorPosition(line, column)
+			// JSON unmarshals numbers as float64, not int
+			if line, ok := msg.Payload["lineNumber"].(float64); ok {
+				if column, ok := msg.Payload["column"].(float64); ok {
+					user.UpdateCursorPosition(int(line), int(column))
 				} else {
 					continue
 				}
@@ -74,7 +90,21 @@ func readBroadcastsFromUser(user *models.User, room *models.Room) {
 }
 
 func closeUserConnection(user *models.User, room *models.Room) {
+	userID := user.UserID // Save before closing
+
+	// First remove user from room so they don't receive their own leave message
+	room.RemoveUser(userID)
+
+	// Broadcast user_left to remaining users
+	room.Broadcast <- models.BroadcastMessage{
+		UserID: userID,
+		Type:   "user_left",
+		Payload: map[string]any{
+			"roomId": room.RoomID,
+		},
+	}
+
+	// Now clean up the user's resources
 	user.Conn.Close()
-	user.Close() // shut down the user's goroutines
-	room.RemoveUser(user.UserID)
+	user.Close()
 }

@@ -9,7 +9,7 @@ import (
 
 type User struct {
 	UserID         string                `json:"userId"`
-	Name           string                `json:"name"`
+	Name           string                `json:"userName"`
 	CursorPosition CursorPosition        `json:"cursorPosition"`
 	Conn           *websocket.Conn       `json:"-"`
 	Send           chan BroadcastMessage `json:"-"`
@@ -45,6 +45,12 @@ func (u *User) UpdateCursorPosition(line, column int) {
 	defer u.mu.Unlock()
 	u.CursorPosition.Line = line
 	u.CursorPosition.Column = column
+}
+
+func (u *User) GetCursorPosition() CursorPosition {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	return u.CursorPosition
 }
 
 // this function reads incoming messages from the Send channel and sends to the user's websocket connection
