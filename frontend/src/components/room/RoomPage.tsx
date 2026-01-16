@@ -5,6 +5,7 @@ import EnterName from './EnterName';
 import CodeEditor from './CodeEditor';
 import { DarkModeContext, UserContext } from '../../App';
 import { DEFAULT_CODE } from '../../util/constants';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:7778';
 
 function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -117,7 +118,7 @@ function RoomPage() {
   // Setup WebSocket connection and handlers when the user successfully joins the room
   useEffect(() => {
     if (!isJoined || !roomId) return;
-    const websocket = new WebSocket(`ws://localhost:8080/ws/${roomId}?userId=${userId}`);
+    const websocket = new WebSocket(`${WS_URL}/ws/${roomId}?userId=${userId}`);
     setWs(websocket);
 
     websocket.onopen = async () => {

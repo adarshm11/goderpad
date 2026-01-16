@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:8080';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7778';
 
 export async function createRoom(userId: string, name: string, roomName: string) {
   try {
@@ -13,7 +13,7 @@ export async function createRoom(userId: string, name: string, roomName: string)
         roomName,
       }),
     });
-    return await response.json()
+    return await response.json();
   } catch (err) {
     return {
       ok: false,
@@ -52,6 +52,6 @@ export async function getRoomName(roomId: string) {
     return {
       ok: false,
       error: err instanceof Error ? err.message : 'Network error'
-    }
+    };
   }
 }

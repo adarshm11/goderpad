@@ -1,15 +1,28 @@
 package main
 
 import (
+	"log"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"goderpad/config"
 	"goderpad/handlers"
 )
 
 func main() {
+	// Load configuration
+	if err := config.Load("config/config.yml"); err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
 	r := gin.Default()
-	r.Use(cors.Default())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:7777", "http://frontend:7777"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept"},
+		AllowCredentials: true,
+	}))
 
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -23,5 +36,5 @@ func main() {
 
 	r.GET("/ws/:roomID", handlers.WebSocketHandler)
 
-	r.Run(":8080")
+	r.Run(":" + config.GetPort())
 }
