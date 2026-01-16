@@ -27,4 +27,5 @@ dist-ssr
 config.yml
 config.yaml
 .env
-.env.*
+.env.development
+.env.production
