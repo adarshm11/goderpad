@@ -3,11 +3,13 @@ import { createRoom } from '../../api/api';
 import { useNavigate } from 'react-router-dom';
 import { DarkModeContext } from '../../App';
 import { UserContext } from '../../App';
+import Popup from '../popup/Popup';
 
 function HomePage() {
   const { isDark } = useContext(DarkModeContext);
   const [userName, setUserName] = useState('');
   const [roomName, setRoomName] = useState('');
+  const [showPopup, setShowPopup] = useState(false);
   const navigate = useNavigate();
   const { userId } = useContext(UserContext);
 
@@ -25,11 +27,19 @@ function HomePage() {
       localStorage.setItem(`goderpad-cookie-${roomId}`, data);
       navigate(`/${roomId}`);
     } else {
-      alert(response.error || 'Failed to create room');
+      setShowPopup(true);
     }
   };
 
-  return (
+  return (<>
+    <Popup
+      message="sorry, an error occurred trying to create the room."
+      buttonText="ok"
+      isOpen={showPopup}
+      onClickButton={() => {
+        setShowPopup(false);
+      }}
+    />
     <div className={`min-h-screen ${isDark ? 'bg-slate-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
       <h1 className='text-4xl font-bold text-center pt-20'>welcome to goderpad</h1>
       <h3 className='text-xl text-center pt-4'>sce's interview platform</h3>
@@ -89,7 +99,7 @@ function HomePage() {
         </div>
       </div>
     </div>
-  );
+  </>);
 }
 
 export default HomePage;

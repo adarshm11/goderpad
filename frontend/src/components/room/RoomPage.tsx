@@ -3,6 +3,7 @@ import { useState, useEffect, useContext } from 'react';
 import { joinRoom, getRoomName } from '../../api/api';
 import EnterName from './EnterName';
 import CodeEditor from './CodeEditor';
+import Popup from '../popup/Popup';
 import { DarkModeContext, UserContext } from '../../App';
 import { DEFAULT_CODE } from '../../util/constants';
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:7778';
@@ -15,6 +16,7 @@ function RoomPage() {
   const [userName, setUserName] = useState('');
   const [isJoined, setIsJoined] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
   const [roomName, setRoomName] = useState('sce interview');
   const [code, setCode] = useState(DEFAULT_CODE);
   const [ws, setWs] = useState<WebSocket | null>(null);
@@ -44,8 +46,7 @@ function RoomPage() {
       localStorage.setItem(`goderpad-cookie-${roomId}`, data);
       setIsJoined(true);
     } else {
-      alert(response.error || 'Failed to join room');
-      navigate('/');
+      setShowPopup(true);
     }
   };
 
@@ -61,12 +62,10 @@ function RoomPage() {
         if (response.ok) {
           setRoomName(response.data.roomName || 'sce interview');
         } else {
-          alert(response.error || 'Failed to fetch room name');
-          navigate('/');
+          setShowPopup(true);
         }
       } catch (err) {
-        alert('Failed to fetch room name');
-        navigate('/');
+        setShowPopup(true);
       }
     };
 
@@ -192,7 +191,16 @@ function RoomPage() {
   }, [isJoined, roomId]);
 
   if (!isJoined) {
-    return (
+    return (<>
+      <Popup
+        message="sorry, an error occurred trying to join the room"
+        buttonText="return to home"
+        isOpen={showPopup}
+        onClickButton={() => {
+          setShowPopup(false);
+          navigate('/');
+        }}
+      />
       <EnterName
         roomName={roomName}
         userName={userName}
@@ -200,7 +208,7 @@ function RoomPage() {
         isLoading={isLoading}
         onJoinRoom={handleJoinRoom}
       />
-    );
+    </>);
   }
 
   return (
