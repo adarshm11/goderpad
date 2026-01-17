@@ -8,7 +8,7 @@ import (
 // CreateRoom creates a new room with the given details.
 // It does NOT add a user to the room, that is handled in the JoinRoom function.
 func CreateRoom(userID, name, roomName string) (string, error) {
-	roomID := utils.GenerateUUID()
+	roomID := utils.GenerateRoomCode()
 	room := models.NewRoom(roomID, roomName)
 
 	hub := models.GetHub()
