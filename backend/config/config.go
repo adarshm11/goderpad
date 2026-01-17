@@ -12,7 +12,8 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port string `yaml:"port"`
+	Port   string `yaml:"port"`
+	APIKey string `yaml:"api_key"`
 }
 
 var AppConfig Config
@@ -34,4 +35,8 @@ func Load(configPath string) error {
 
 func GetPort() string {
 	return AppConfig.Server.Port
+}
+
+func GetAPIKey() string {
+	return AppConfig.Server.APIKey
 }

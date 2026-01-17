@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"goderpad/config"
 	"goderpad/models"
 	"goderpad/services"
 )
@@ -81,4 +82,34 @@ func GetRoomNameHandler(c *gin.Context) {
 			"roomName": roomName,
 		},
 	})
+}
+
+func GetDocumentSaveHandler(c *gin.Context) {
+	roomID := c.Param("roomID")
+	if roomID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Room ID is required"})
+		return
+	}
+
+	apiKey := c.GetHeader("x-api-key")
+	if apiKey == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "API key is required"})
+		return
+	}
+	if apiKey != config.GetAPIKey() {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Invalid API key"})
+		return
+	}
+
+	data, err := models.ReadDocumentFromFile("past/" + roomID + "/App.js")
+	if err != nil {
+		if errors.Is(err, models.ErrFileNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read document"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"document": data})
 }

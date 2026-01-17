@@ -7,6 +7,7 @@ var (
 	ErrRoomNil      = errors.New("room cannot be nil")
 	ErrRoomExists   = errors.New("room already exists")
 	ErrRoomNotFound = errors.New("room not found")
+	ErrFileNotFound = errors.New("file not found")
 )
 
 // Server errors (5xx)

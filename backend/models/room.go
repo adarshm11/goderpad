@@ -130,3 +130,14 @@ func (r *Room) saveToFile() {
 	r.dirty = false
 	r.lastSave = time.Now()
 }
+
+func ReadDocumentFromFile(filePath string) (string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", ErrFileNotFound
+		}
+		return "", err
+	}
+	return string(data), nil
+}
