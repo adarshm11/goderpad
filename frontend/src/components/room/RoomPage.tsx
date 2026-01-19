@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { joinRoom, getRoomName } from '../../api/api';
 import EnterName from './EnterName';
 import CodeEditor from './CodeEditor';
@@ -34,6 +34,8 @@ function RoomPage() {
       endColumn: number;
     } | null;
   }>>([]);
+  const [toasts, setToasts] = useState<Array<{ id: number; message: string }>>([]);
+  const toastIdRef = useRef(0);
 
   const handleJoinRoom = async () => {
     if (!userName.trim() || !roomId) return;
@@ -157,7 +159,13 @@ function RoomPage() {
               },
               selection: null
             }
-          ])
+          ]);
+          // Show toast for new user joining
+          const joinToastId = ++toastIdRef.current;
+          setToasts(prev => [...prev, { id: joinToastId, message: `${message.payload.userName} joined the room` }]);
+          setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== joinToastId));
+          }, 3000);
           break;
 
         case 'user_left':
@@ -199,6 +207,22 @@ function RoomPage() {
           setCode(message.payload.code);
           break;
 
+        case 'visibility_change': {
+          const user = users.find(u => u.userId === message.userId);
+          const name = message.payload.userName || user?.userName || 'Someone';
+          const isVisible = message.payload.isVisible;
+          const toastMessage = isVisible 
+            ? `${name} returned to goderpad` 
+            : `${name} exited goderpad`;
+          const newToastId = ++toastIdRef.current;
+          setToasts(prev => [...prev, { id: newToastId, message: toastMessage }]);
+          // Auto-remove toast after 3 seconds
+          setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== newToastId));
+          }, 3000);
+          break;
+        }
+
         default:
           break;
       }
@@ -217,6 +241,52 @@ function RoomPage() {
       setWs(null);
     };
   }, [isJoined, roomId]);
+
+  // Detect tab visibility changes and window focus changes, broadcast to other users
+  useEffect(() => {
+    if (!ws || !isJoined) return;
+
+    let lastVisibleState: boolean | null = null;
+
+    const sendVisibilityChange = (isVisible: boolean) => {
+      // Only send if the state actually changed
+      if (lastVisibleState === isVisible) return;
+      lastVisibleState = isVisible;
+
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          userId,
+          type: 'visibility_change',
+          payload: {
+            userName,
+            isVisible
+          }
+        }));
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      sendVisibilityChange(!document.hidden);
+    };
+
+    const handleWindowBlur = () => {
+      sendVisibilityChange(false);
+    };
+
+    const handleWindowFocus = () => {
+      sendVisibilityChange(true);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+  }, [ws, isJoined, userId, userName]);
 
   if (!isJoined) {
     return (<>
@@ -252,6 +322,19 @@ function RoomPage() {
         ws={ws}
         users={users}
       />
+      {/* Toast notifications */}
+      <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-50">
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`px-4 py-3 rounded-lg shadow-lg animate-slide-in ${
+              isDark ? 'bg-slate-700 text-white' : 'bg-white text-gray-900 border border-gray-200'
+            }`}
+          >
+            {toast.message}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
