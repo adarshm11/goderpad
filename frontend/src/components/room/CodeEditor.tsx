@@ -13,7 +13,13 @@ interface CodeEditorProps {
     cursorPosition: {
       lineNumber: number;
       column: number 
-    } | null
+    } | null;
+    selection: {
+      startLineNumber: number;
+      startColumn: number;
+      endLineNumber: number;
+      endColumn: number;
+    } | null;
   }>;
 }
 
@@ -27,6 +33,7 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
   const [hasError, setHasError] = useState(false);
   const [debouncedCode, setDebouncedCode] = useState(code);
   const decorationsRef = useRef<string[]>([]);
+  const selectionDecorationsRef = useRef<string[]>([]);
   const [visibleLabels, setVisibleLabels] = useState<Set<string>>(new Set());
   const labelTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
   const prevCursorPositions = useRef<Map<string, string>>(new Map());
@@ -59,6 +66,22 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
           payload: {
             lineNumber: e.position.lineNumber,
             column: e.position.column
+          }
+        }));
+      }
+    });
+
+    editor.onDidChangeCursorSelection((e: any) => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        const selection = e.selection;
+        wsRef.current.send(JSON.stringify({
+          userId,
+          type: 'selection_update',
+          payload: {
+            startLineNumber: selection.startLineNumber,
+            startColumn: selection.startColumn,
+            endLineNumber: selection.endLineNumber,
+            endColumn: selection.endColumn
           }
         }));
       }
@@ -167,7 +190,29 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
     // Apply decorations immediately (delta from old to new)
     decorationsRef.current = editor.deltaDecorations(decorationsRef.current, newDecorations);
 
-    // Add dynamic styles for each user's cursor
+    // Create selection decorations for other users
+    const selectionDecorations = users
+      .filter(user => user.userId !== userId && user.selection && user.userName)
+      .map(user => {
+        const selection = user.selection!;
+        return {
+          range: new monaco.Range(
+            selection.startLineNumber,
+            selection.startColumn,
+            selection.endLineNumber,
+            selection.endColumn
+          ),
+          options: {
+            className: `selection-${user.userId}`,
+            stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+          }
+        };
+      });
+
+    // Apply selection decorations
+    selectionDecorationsRef.current = editor.deltaDecorations(selectionDecorationsRef.current, selectionDecorations);
+
+    // Add dynamic styles for each user's cursor and selection
     users
       .filter(user => user.userId !== userId && user.userName)
       .forEach((user, index) => {
@@ -202,6 +247,9 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
             white-space: nowrap;
             z-index: 100;
             pointer-events: none;
+          }
+          .selection-${user.userId} {
+            background-color: ${color}40 !important;
           }
         `;
         document.head.appendChild(style);

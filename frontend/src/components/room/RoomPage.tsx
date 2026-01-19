@@ -26,7 +26,13 @@ function RoomPage() {
     cursorPosition: {
       lineNumber: number;
       column: number 
-    } | null
+    } | null;
+    selection: {
+      startLineNumber: number;
+      startColumn: number;
+      endLineNumber: number;
+      endColumn: number;
+    } | null;
   }>>([]);
 
   const handleJoinRoom = async () => {
@@ -148,7 +154,8 @@ function RoomPage() {
               cursorPosition: {
                 lineNumber: 1,
                 column: 1
-              }
+              },
+              selection: null
             }
           ])
           break;
@@ -162,6 +169,27 @@ function RoomPage() {
             prevUsers.map(u => 
               u.userId === message.userId
                 ? { ...u, cursorPosition: { lineNumber: message.payload.lineNumber, column: message.payload.column } }
+                : u
+            )
+          );
+          break;
+
+        case 'selection_update':
+          setUsers(prevUsers => 
+            prevUsers.map(u => 
+              u.userId === message.userId
+                ? { 
+                    ...u, 
+                    selection: message.payload.startLineNumber === message.payload.endLineNumber && 
+                               message.payload.startColumn === message.payload.endColumn
+                      ? null 
+                      : {
+                          startLineNumber: message.payload.startLineNumber,
+                          startColumn: message.payload.startColumn,
+                          endLineNumber: message.payload.endLineNumber,
+                          endColumn: message.payload.endColumn
+                        }
+                  }
                 : u
             )
           );

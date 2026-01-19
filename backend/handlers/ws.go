@@ -45,7 +45,7 @@ func WebSocketHandler(c *gin.Context) {
 
 	user.Conn = conn
 
-	// Send current cursor positions of all other users to the newly connected user
+	// Send current cursor positions and selections of all other users to the newly connected user
 	for _, otherUser := range room.GetCurrentUsers() {
 		if otherUser.UserID != userID {
 			pos := otherUser.GetCursorPosition()
@@ -57,6 +57,20 @@ func WebSocketHandler(c *gin.Context) {
 					"column":     pos.Column,
 				},
 			})
+			// Send selection if exists
+			sel := otherUser.GetSelection()
+			if sel != nil {
+				conn.WriteJSON(models.BroadcastMessage{
+					UserID: otherUser.UserID,
+					Type:   "selection_update",
+					Payload: map[string]any{
+						"startLineNumber": sel.StartLineNumber,
+						"startColumn":     sel.StartColumn,
+						"endLineNumber":   sel.EndLineNumber,
+						"endColumn":       sel.EndColumn,
+					},
+				})
+			}
 		}
 	}
 
@@ -81,6 +95,17 @@ func readBroadcastsFromUser(user *models.User, room *models.Room) {
 				} else {
 					continue
 				}
+			} else {
+				continue
+			}
+		}
+		if msg.Type == "selection_update" {
+			startLine, ok1 := msg.Payload["startLineNumber"].(float64)
+			startCol, ok2 := msg.Payload["startColumn"].(float64)
+			endLine, ok3 := msg.Payload["endLineNumber"].(float64)
+			endCol, ok4 := msg.Payload["endColumn"].(float64)
+			if ok1 && ok2 && ok3 && ok4 {
+				user.UpdateSelection(int(startLine), int(startCol), int(endLine), int(endCol))
 			} else {
 				continue
 			}

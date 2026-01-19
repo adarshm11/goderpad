@@ -11,6 +11,7 @@ type User struct {
 	UserID         string                `json:"userId"`
 	Name           string                `json:"userName"`
 	CursorPosition CursorPosition        `json:"cursorPosition"`
+	Selection      *SelectionRange       `json:"selection"`
 	Conn           *websocket.Conn       `json:"-"`
 	Send           chan BroadcastMessage `json:"-"`
 	done           chan struct{}         `json:"-"`
@@ -20,6 +21,13 @@ type User struct {
 type CursorPosition struct {
 	Line   int `json:"lineNumber"`
 	Column int `json:"column"`
+}
+
+type SelectionRange struct {
+	StartLineNumber int `json:"startLineNumber"`
+	StartColumn     int `json:"startColumn"`
+	EndLineNumber   int `json:"endLineNumber"`
+	EndColumn       int `json:"endColumn"`
 }
 
 func CreateUser(userID, name string) *User {
@@ -51,6 +59,28 @@ func (u *User) GetCursorPosition() CursorPosition {
 	u.mu.Lock()
 	defer u.mu.Unlock()
 	return u.CursorPosition
+}
+
+func (u *User) UpdateSelection(startLine, startColumn, endLine, endColumn int) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	// If selection is empty (start equals end), clear it
+	if startLine == endLine && startColumn == endColumn {
+		u.Selection = nil
+	} else {
+		u.Selection = &SelectionRange{
+			StartLineNumber: startLine,
+			StartColumn:     startColumn,
+			EndLineNumber:   endLine,
+			EndColumn:       endColumn,
+		}
+	}
+}
+
+func (u *User) GetSelection() *SelectionRange {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	return u.Selection
 }
 
 // this function reads incoming messages from the Send channel and sends to the user's websocket connection
