@@ -12,5 +12,6 @@ sce conducts a cutting-edge industry pipeline through its summer internship prog
 **without docker**:  
 1. `cd frontend && npm run dev`
 2. in a separate terminal: `cd backend && go run main.go`
+note: if you have a windows machine, frick you and this app won't run for you
 
 the frontend runs at `http://localhost:7777` and the backend runs at `http://localhost:7778`.
