@@ -23,7 +23,7 @@ function PastInterviewPage() {
           setShowPopup(true);
         }
         setInterviewContent(response.data.document);
-        setRoomName(response.data.roomName.substring(0, response.data.roomName.length - 3)); // remove .js extension
+        setRoomName(response.data.roomName);
       } catch (error) {
         setShowPopup(true);
       }
