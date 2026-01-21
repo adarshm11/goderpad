@@ -122,7 +122,7 @@ func (r *Room) saveToFile() {
 		return
 	}
 
-	filePath := filepath.Join(dirPath, "App.js")
+	filePath := filepath.Join(dirPath, r.RoomName)
 	if err := os.WriteFile(filePath, []byte(r.Document), 0644); err != nil {
 		return
 	}

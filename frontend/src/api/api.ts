@@ -17,7 +17,7 @@ export async function createRoom(userId: string, name: string, roomName: string)
   } catch (err) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : 'Network error'
+      error: err instanceof Error ? err.message : 'Error creating room'
     };
   }
 }
@@ -39,7 +39,7 @@ export async function joinRoom(userId: string, name: string, roomId: string) {
   } catch (err) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : 'Network error'
+      error: err instanceof Error ? err.message : 'Error joining room'
     };
   }
 }
@@ -51,7 +51,24 @@ export async function getRoomName(roomId: string) {
   } catch (err) {
     return {
       ok: false,
-      error: err instanceof Error ? err.message : 'Network error'
+      error: err instanceof Error ? err.message : 'Error fetching room name'
+    };
+  }
+}
+
+export async function getInterviewContent(interviewId: string) {
+  try {
+    const response = await fetch(`${API_URL}/past/${interviewId}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': import.meta.env.VITE_API_KEY || '',
+      }
+    });
+    return await response.json();
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Error fetching interview content'
     };
   }
 }

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { createContext, useState } from 'react';
 import RoomPage from './components/room/RoomPage';
 import HomePage from './components/home/HomePage';
+import PastInterviewPage from './components/save/PastInterviews';
 import { v4 as uuidv4 } from 'uuid';
 
 export const DarkModeContext = createContext<{
@@ -74,6 +75,7 @@ function App() {
             <Routes>
               <Route path='/' element={<HomePage />} />
               <Route path='/:roomId' element={<RoomPage />} />
+              <Route path='/past/:interviewId' element={<PastInterviewPage />} />
             </Routes>
           </div>
         </BrowserRouter>

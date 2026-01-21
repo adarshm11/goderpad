@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 
@@ -101,15 +102,27 @@ func GetDocumentSaveHandler(c *gin.Context) {
 		return
 	}
 
-	data, err := models.ReadDocumentFromFile("past/" + roomID + "/App.js")
+	dirPath := "past/" + roomID
+	files, err := os.ReadDir(dirPath)
 	if err != nil {
-		if errors.Is(err, models.ErrFileNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
-			return
-		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read directory"})
+		return
+	}
+	if len(files) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
+		return
+	}
+	fileName := files[0].Name()
+	data, err := models.ReadDocumentFromFile(dirPath + "/" + fileName)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read document"})
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"document": data})
+	c.JSON(http.StatusOK, gin.H{
+		"ok": true,
+		"data": map[string]any{
+			"document": data,
+			"roomName": fileName,
+		},
+	})
 }
