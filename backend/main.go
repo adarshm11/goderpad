@@ -8,6 +8,7 @@ import (
 
 	"goderpad/config"
 	"goderpad/handlers"
+	"goderpad/services"
 )
 
 func main() {
@@ -36,6 +37,8 @@ func main() {
 	r.GET("/past/:roomID", handlers.GetDocumentSaveHandler)
 
 	r.GET("/ws/:roomID", handlers.WebSocketHandler)
+
+	go services.DeleteRoomSaves()
 
 	r.Run(":" + config.GetPort())
 }
