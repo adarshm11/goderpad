@@ -306,6 +306,7 @@ function CodeEditor({ code, setCode, ws, users }: CodeEditorProps) {
             bundlerURL: 'https://sandpack-bundler.codesandbox.io',
             recompileMode: 'delayed',
             recompileDelay: 300,
+            autoReload: true,
           }}
           style={{ height: '100%' }}
         >
