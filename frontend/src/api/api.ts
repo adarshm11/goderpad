@@ -1,4 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7778';
+const API_KEY = import.meta.env.VITE_API_KEY || '';
 
 export async function createRoom(userId: string, name: string, roomName: string) {
   try {
@@ -61,7 +62,7 @@ export async function getInterviewContent(interviewId: string) {
     const response = await fetch(`${API_URL}/past/${interviewId}`, {
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': import.meta.env.VITE_API_KEY || '',
+        'x-api-key': API_KEY,
       }
     });
     return await response.json();
