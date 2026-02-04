@@ -2,12 +2,14 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	"goderpad/config"
 	"goderpad/handlers"
+	"goderpad/metrics"
 	"goderpad/services"
 )
 
@@ -25,6 +27,8 @@ func main() {
 		AllowCredentials: true,
 	}))
 
+	r.Use(prometheusMiddleware)
+
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "pong",
@@ -41,4 +45,12 @@ func main() {
 	go services.DeleteRoomSaves()
 
 	r.Run(":" + config.GetPort())
+}
+
+func prometheusMiddleware(c *gin.Context) {
+	method := c.Request.Method
+	endpoint := c.FullPath()
+
+	status := c.Writer.Status()
+	metrics.EndpointHits.WithLabelValues(endpoint, method, http.StatusText(status)).Inc()
 }
